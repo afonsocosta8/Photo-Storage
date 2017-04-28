@@ -9,13 +9,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include "PhotoStorageApi.h"
+#include "photostorageapi.h"
 
 int main(int argc, char const *argv[]) {
   char *host, *port;
   port = calloc(128, sizeof(char));
   host = calloc(128, sizeof(char));
-  int p;
+  in_port_t p;
   int i;
   if(argc!=5) { /* Number of arguments inserted is not correct */
       printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");

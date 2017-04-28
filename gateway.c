@@ -13,14 +13,20 @@ void * handle_get(void * arg){
   struct sockaddr_in client_addr = *(struct sockaddr_in *)arg;
   int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
   char resp_buff[100];
+  int nbytes;
 
   // GET PEER ADDRESS AND SPRINTF TO buff
 
   #ifdef DEBUG
-    printf("\t\tDEBUG: SERVING CLIENT %s:%d WITH PEER %s:%d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
+    printf("\t\tDEBUG: SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
   #endif
+
   sprintf(resp_buff, "OK %s:%d", "192.168.2.2", 5000);
-  sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
+  #endif
 
   return;
 }
@@ -34,7 +40,7 @@ void * handle_reg(void * arg){
   // GET PEER ADDRESS AND SPRINTF TO buff
 
   #ifdef DEBUG
-    printf("\t\tDEBUG: REGISTERING PEER OK");
+    printf("\t\tDEBUG: REGISTERING PEER OK\n");
   #endif
   sprintf(resp_buff, "OK");
   sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
@@ -95,14 +101,16 @@ int main(){
 
     if(strcmp(buff, "GET PEER")==0){
       #ifdef DEBUG
-        printf("\tDEBUG: DECODED AS GET PEER\nDEBUG: CREATING THREAD FOR CLIENT...");
+        printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
       #endif
-      if(pthread_create(&thr_id, NULL, handle_get, &client_addr)==0){
-        printf("ERROR CREATING THREAD FOR CLIENT %s:%d", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+
+      if(pthread_create(&thr_id, NULL, handle_get, &client_addr)!=0){
+        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
         exit(-1);
       }
+
       #ifdef DEBUG
-        printf("\tDEBUG: THREAD CREATED");
+        printf("\tDEBUG: THREAD CREATED\n");
       #endif
 
 

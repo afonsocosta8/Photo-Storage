@@ -34,7 +34,5 @@
 
 
 gateway
-library
-
-
-string
+photostorage
+client
