@@ -31,3 +31,10 @@
 # Debug files
 *.dSYM/
 *.su
+
+
+gateway
+library
+
+
+string
