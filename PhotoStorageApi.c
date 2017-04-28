@@ -14,8 +14,8 @@ int gallery_connect(char * host, in_port_t p){
 
   struct sockaddr_in server_addr;
 	struct sockaddr_in client_addr;
-	char buff[]="GET";
-  char port[6];
+	char buff[]="GET PEER";
+  int port;
   char ip[20];
 	int nbytes;
 
@@ -36,9 +36,11 @@ int gallery_connect(char * host, in_port_t p){
 	                    buff, strlen(buff)+1, 0,
 	                    (const struct sockaddr *) &server_addr, sizeof(server_addr));
 	printf("sent %d %s\n", nbytes, buff);
+  printf("à espera de receber\n");
 	nbytes = recv(sock_fd, buff, 20, 0);
-  sscanf(buff, "OK %s:%s", ip, port);
-	printf("received %d bytes --- ip = %s port = %s ---\n", nbytes, buff, port);
+  printf("recebi\n");
+  sscanf(buff, "OK %s:%d", ip, port);
+	printf("received %d bytes --- ip = %s port = %d ---\n", nbytes, buff, port);
   //---------------------------------------------------------------------------------------------------------
   sock_fd= socket(AF_INET, SOCK_STREAM, 0);
 
@@ -49,7 +51,7 @@ int gallery_connect(char * host, in_port_t p){
 	printf("TCP socket created. Ready to connect\n");
 	server_addr.sin_family = AF_INET;
 	// this values can be read from the keyboard
-	server_addr.sin_port= htons(atoi(port));
+	server_addr.sin_port= htons(port);
 	inet_aton(ip, &server_addr.sin_addr);
 
 	if( -1 == connect(sock_fd,
