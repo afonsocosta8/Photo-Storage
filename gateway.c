@@ -8,6 +8,145 @@
 #include <arpa/inet.h>
 
 
+typedef struct _peer{
+
+  char ip[16];
+  int  port;
+  struct _peer *next;
+
+}peer;
+
+
+typedef struct _peerlist{
+
+  peer *last_used;
+  peer *beginning;
+
+}peer_list;
+
+peer_list *init_peer_list(){
+
+  peer_list *list = (peer_list*)malloc(sizeof(peer_list));
+
+  list->last_used = NULL;
+  list->beginning = NULL;
+
+  return list;
+
+}
+
+void add_peer_list(peer_list *list, char *ip, int port){
+
+  peer *new = (peer*)malloc(sizeof(peer));
+
+  strcpy(new->ip, ip);
+  new->port = port;
+  new->next = NULL;
+
+  if(list->beginning == NULL){
+
+    list->beginning = new;
+    new->next = new;
+
+  }else{
+
+    peer * aux;
+    for(aux = list->beginning; aux->next != list->beginning; aux=aux->next);
+    new ->next = list->beginning;
+    aux->next = new;
+
+  }
+}
+
+void print_peer_list(peer_list *list){
+
+  peer *aux;
+  int i;
+
+  printf("\tDEBUG: PEERS LIST:\n");
+  if(list->beginning!=NULL){
+    if(list->beginning==list->beginning->next)
+      printf("\tDEBUG: PEER 1: %s:%d\n", list->beginning->ip, list->beginning->port);
+
+    else{
+      for(i=1, aux = list->beginning; aux->next != list->beginning; aux=aux->next, i++)
+        printf("\tDEBUG: PEER %d: %s:%d\n", i, aux->ip, aux->port);
+      printf("\tDEBUG: PEER %d: %s:%d\n", i, aux->ip, aux->port);
+    }
+  }
+}
+
+int get_peer(peer_list *list, char *ip, int *port){
+
+  if(list->beginning == NULL)
+    return 0;
+
+  if(list->last_used==NULL)
+    list->last_used = list->beginning;
+  else
+    list->last_used = list->last_used->next;
+
+  strcpy(ip, list->last_used->ip);
+  *port = list->last_used->port;
+
+  return 1;
+
+}
+
+void remove_peer(peer_list *list, char *ip, int port){
+  peer *actual;
+  peer *previous;
+  if(list->beginning!=NULL){
+    for(actual = list->beginning; (strcmp(ip, actual->ip)!=0 && port!=actual->port);  previous = actual, actual=actual->next);
+
+    // first case: we want to remove the node that is the beginning of the list
+    if(actual == list->beginning){
+      peer* last;
+
+      // find last element on the list
+      for(last = list->beginning; last->next != list->beginning; last=last->next);
+      // if last == begining, then there is only one element on the list, put beginning pointing to NULL
+      if(last == list->beginning){
+        list->beginning = NULL;
+        list->last_used = NULL;
+      }else{
+        // put the begining and last element of the list pointing to the second element of the list
+        last->next = list->beginning = actual->next;
+      }
+      // free element we want to remove
+      free(actual);
+    }
+    // else: we just need to free the element make the previous element pointing to the next
+    else{
+
+      previous->next = actual->next;
+      free(actual);
+
+    }
+  }
+}
+
+void free_peer_list(peer_list *list){
+
+  if(list->beginning!=NULL){
+    peer *actual;
+    peer *last, *previous;
+    actual = list->beginning;
+    for(last = list->beginning; last->next != list->beginning; last=last->next);
+    last->next = NULL;
+    while(actual!=NULL){
+      previous = actual;
+      actual = actual->next;
+      free(previous);
+    }
+  }
+  free(list);
+
+}
+
+
+
+
 void * handle_get(void * arg){
 
   struct sockaddr_in client_addr = *(struct sockaddr_in *)arg;
@@ -38,7 +177,7 @@ void * handle_reg(void * arg){
   int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
   char resp_buff[100];
 
-  // GET PEER ADDRESS AND SPRINTF TO buff
+  // ADD PEER TO LIST
 
   #ifdef DEBUG
     printf("\t\tDEBUG: REGISTERING PEER OK\n");
@@ -65,7 +204,31 @@ int main(){
   pthread_t thr_id;
 
   // PEERS LIST RELATED
+  peer_list *list = init_peer_list();
 
+  add_peer_list(list, "192.168.1.10", 8012);
+  add_peer_list(list, "192.168.1.10", 8013);
+  add_peer_list(list, "192.168.1.10", 8015);
+  add_peer_list(list, "192.168.1.10", 8016);
+  print_peer_list(list);
+  remove_peer(list, "192.168.1.10", 8015);
+  print_peer_list(list);
+  remove_peer(list, "192.168.1.10", 8013);
+  print_peer_list(list);
+  remove_peer(list, "192.168.1.10", 8012);
+  print_peer_list(list);
+  remove_peer(list, "192.168.1.10", 8016);
+  print_peer_list(list);
+  add_peer_list(list, "192.168.1.10", 8012);
+  add_peer_list(list, "192.168.1.10", 8013);
+  add_peer_list(list, "192.168.1.10", 8015);
+  add_peer_list(list, "192.168.1.10", 8016);
+  print_peer_list(list);
+  free_peer_list(list);
+
+
+
+/*
   #ifdef DEBUG
     printf("\tDEBUG: CREATING SOCKET...\n");
   #endif
@@ -98,7 +261,7 @@ int main(){
       printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port,  buff);
     #endif
 
-    printf("NEW CLIENT CONNECTED\n");
+    printf("NEW CLIENT CONNECTED FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
     if(strcmp(buff, "GET PEER")==0){
       #ifdef DEBUG
@@ -133,6 +296,7 @@ int main(){
 
 
   }
+  */
   exit(0);
 
 
