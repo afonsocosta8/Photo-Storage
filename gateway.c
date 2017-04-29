@@ -200,12 +200,11 @@ void * handle_get(void * arg){
       if(sendto(test_peer_fd, test_peer_query, strlen(test_peer_query)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr))!=-1){
 
         #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port, test_peer_query);
+          printf("\t\tDEBUG: SENT TO PEER %s:%d --- %s ---\n", inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port, test_peer_query);
         #endif
 
         // WAITING FOR PEER RESPONSE. TIMEOUT = 1sec
         #ifdef DEBUG
-          print_peer_list(list);
           printf("\t\tDEBUG: WAITING FOR PEER RESPONSE.\n");
         #endif
 
@@ -218,7 +217,6 @@ void * handle_get(void * arg){
         }
 
         #ifdef DEBUG
-          print_peer_list(list);
           printf("\t\tDEBUG: ENDED WAITING FOR PEER RESPONSE.\n");
         #endif
 
@@ -232,6 +230,21 @@ void * handle_get(void * arg){
           printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, ip, port);
           sprintf(resp_buff, "OK %s:%d", ip, port);
           DONE = 1;
+
+        }else{
+
+          #ifdef DEBUG
+            printf("\t\tDEBUG: PEER  %s:%d NOT ALIVE. REMOVING FROM PEER LIST...\n", ip, port);
+          #endif
+
+          // PEER NOT ALIVE... NEED TO RETRIEVE ANOTHER PEER FROM PEER LIST AND REMV THIS ONE
+          remove_peer(list, ip, port);
+          print_peer_list(list);
+
+          #ifdef DEBUG
+            printf("\t\tRETRIEVING ANOTHER PEER...\n");
+          #endif
+
 
         }
 
