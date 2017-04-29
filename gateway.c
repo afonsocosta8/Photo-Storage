@@ -206,24 +206,60 @@ int main(){
   // PEERS LIST RELATED
   peer_list *list = init_peer_list();
 
+  char ip[20];
+  int port;
   add_peer_list(list, "192.168.1.10", 8012);
   add_peer_list(list, "192.168.1.10", 8013);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   add_peer_list(list, "192.168.1.10", 8015);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   add_peer_list(list, "192.168.1.10", 8016);
   print_peer_list(list);
   remove_peer(list, "192.168.1.10", 8015);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   print_peer_list(list);
   remove_peer(list, "192.168.1.10", 8013);
   print_peer_list(list);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   remove_peer(list, "192.168.1.10", 8012);
   print_peer_list(list);
   remove_peer(list, "192.168.1.10", 8016);
   print_peer_list(list);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   add_peer_list(list, "192.168.1.10", 8012);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   add_peer_list(list, "192.168.1.10", 8013);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   add_peer_list(list, "192.168.1.10", 8015);
   add_peer_list(list, "192.168.1.10", 8016);
   print_peer_list(list);
+
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
+  get_peer(list, ip, &port);
+  printf("%s:%d\n",ip,port);
   free_peer_list(list);
 
 
