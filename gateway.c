@@ -283,10 +283,18 @@ void * handle_get(void * arg){
   // SENDING RESPONSE TO CLIENT
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
 
-  #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
-  #endif
+  if(nbytes==-1){
 
+    printf("COULD NOT SEND RESPONSE TO CLIENT");
+
+
+  }else{
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
+    #endif
+
+  }
   return;
 }
 

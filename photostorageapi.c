@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <time.h>
 #include "photostorageapi.h"
 
 
@@ -16,36 +17,96 @@ int gallery_connect(char * host, in_port_t p){
 
   struct sockaddr_in server_addr;
 	struct sockaddr_in client_addr;
-	char buff[]="GET PEER";
+	char query_buff[]="GET PEER";
+  char buff[100];
   char *port;
   char *ipport;
   char *ip;
   char gb[4];
 	int nbytes;
   char *pt;
+  int sock_fd;
+  time_t start, end;
 
-	int sock_fd= socket(AF_INET, SOCK_DGRAM, 0);
 
+
+  // CREATING SOCKET FOR CONNECTIONS
+  #ifdef DEBUG
+    printf("\tDEBUG: CREATING SOCKET...\n");
+  #endif
+
+  sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock_fd == -1){
-		perror("socket: ");
+	  perror("ERROR CREATING SOCKER\n");
 		exit(-1);
 	}
 
-	printf(" socket to gateway created \n Ready to send GET message\n");
+  #ifdef DEBUG
+    printf("\tDEBUG: SOCKET No: %d\n", sock_fd);
+  #endif
 
-	server_addr.sin_family = AF_INET;
+
+
+  // PREPATING TO SEND MESSAGE TO GATEWAY
+  #ifdef DEBUG
+    printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+  #endif
+  server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(p);
 	inet_aton(host, &server_addr.sin_addr);
 
-	nbytes = sendto(sock_fd,
-	                    buff, strlen(buff)+1, 0,
-	                    (const struct sockaddr *) &server_addr, sizeof(server_addr));
-	printf("sent %d %s\n", nbytes, buff);
-	nbytes = recv(sock_fd, buff, 20, 0);
-  //sscanf(buff, "%s %s",gb, ipport);
+
+
+  // SENDING MESSAGE TO GATEWAY
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING MESSAGE TO GATEWAY...\n");
+  #endif
+
+  nbytes = sendto(sock_fd, query_buff, strlen(query_buff)+1, 0, (const struct sockaddr *) &server_addr, sizeof(server_addr));
+  if(nbytes==-1){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: GATEWAY UNAVAILABLE.");
+    #endif
+
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), server_addr.sin_port, query_buff);
+  #endif
+
+
+
+  // RECEIVE MESSAGE FROM GATEWAY
+  nbytes = recv(sock_fd, buff, 20, 0);
+
+  #ifdef DEBUG
+    printf("\tDEBUG: ENDED WAITING FOR GATEWAY RESPONSE.\n");
+  #endif
+
+  if(nbytes <= 0){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO GATEWAY.\n");
+    #endif
+    return -1;
+  }
+
+  // MESSAGE RECEIVED
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), server_addr.sin_port,  buff);
+  #endif
+
+  // NO PEERS CASE
+  if(strcmp(buff, "ERROR NO PEERS")==0){
+    #ifdef DEBUG
+      printf("\tDEBUG: NO PEERS AVAILABLE\n");
+    #endif
+    return 0;
+  }
+
+  // HANDLING IP AND PORT
   ipport = buff + 3;
-  /*ip = strtok (ipport,":");
-  port = strtok (NULL,"\0");*/
   int i = 0;
   pt = strtok (ipport,":");
   while (pt != NULL) {
@@ -56,62 +117,110 @@ int gallery_connect(char * host, in_port_t p){
     pt = strtok (NULL, ":");
     i++;
   }
+  #ifdef DEBUG
+    printf("\tDEBUG: DECODED MESSAGE IP:PORT AS %s:%s\n", ip, port);
+  #endif
 
-
-	printf("received %d bytes --- ip = %s port = %s ---\n", nbytes, ip, port);
-  //---------------------------------------------------------------------------------------------------------
+  // CREATING TCP SOCKET TO CONNECT TO PEER
   sock_fd= socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sock_fd == -1){
-		perror("socket: ");
-		exit(-1);
+	if(sock_fd == -1){
+		perror("ERROR CREATING SOCKET\n");
+	  return -1;
 	}
-	printf("TCP socket created. Ready to connect\n");
+
+  #ifdef DEBUG
+    printf("\tDEBUG: TCP SOCKET %d CREATED\n", sock_fd);
+  #endif
+
 	server_addr.sin_family = AF_INET;
-	// this values can be read from the keyboard
 	server_addr.sin_port= htons(atoi(port));
 	inet_aton(ip, &server_addr.sin_addr);
-	if( -1 == connect(sock_fd,
-			(const struct sockaddr *) &server_addr,
-			sizeof(server_addr))){
-				printf("Error connecting\n");
-				exit(-1);
+
+	if(connect(sock_fd, (const struct sockaddr *) &server_addr, sizeof(server_addr)==-1)){
+    #ifdef DEBUG
+      printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%s\n", ip, port);
+    #endif
+		return -1;
 	}
+
+  #ifdef DEBUG
+    printf("\tDEBUG: RETURNING TCP SOCKET %d\n", sock_fd);
+  #endif
+
   return sock_fd;
 }
 
-uint32_t gallery_add_photo(int peer_socket, char *file_n){
 
-  FILE *img = fopen(file_n, "rb");
+
+
+uint32_t gallery_add_photo(int peer_socket, char *file_name){
+
+  int t, i;
+  char buff[100];
+  int nbytes;
+
+  // OPENING FILE
+  #ifdef DEBUG
+    printf("\tDEBUG: OPENING FILE\n");
+  #endif
+
+  FILE *img = fopen(file_name, "rb");
+  if(img == NULL)
+    return 0;
+
+
+  // GET FILE CHARECTERISTICS
   fseek(img, 0, SEEK_END);
   size_t filesize = ftell(img);
   fseek(img, 0, SEEK_SET);
-  char buff[] = "ADD";
+
+
+  // PREPARING PROTOCOL MESSAGE TO PEER
+  sprintf(buff, "ADD PHOTO %s SIZE %d", file_name, filesize);
+
+  if(send(peer_socket, buff, sizeof(buff), 0)==-1)
+    return 0;
+
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
+
+
+  // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
-  int t, i;
-  // store read data into buffer
   fread(buffer, sizeof *buffer, filesize, img);
-  // send header to client
-  header hdr;
-  hdr.data_length = filesize;
-  send(peer_socket, buff, sizeof(buff), 0);
 
-  recv(peer_socket, buff, sizeof(buff), 0);
-  if(strcmp(buff,"OK")){
-    printf("ERROR\n");
+  nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+  if(nbytes == -1)
     return 0;
-  }
 
-  send(peer_socket, (&hdr), sizeof(hdr), 0);
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+  #endif
 
-  send(peer_socket, buffer, filesize, 0);
-
-  recv(peer_socket, buff, sizeof(buff), 0);
-
-  if(strcmp(buff,"OK")){
-    printf("ERROR\n");
+  if(strcmp(buff,"OK")!=0)
     return 0;
-  }
+
+  if(send(peer_socket, buffer, filesize, 0)==-1)
+    return 0;
+
+  nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+  if(nbytes == -1)
+    return 0;
+
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+  #endif
+  char answer[10], photoid[10];
+  sscanf(buff, "%s %s", answer, photoid);
+
+  #ifdef DEBUG
+    printf("\tDEBUG: DECODED FILEID %s\n", buff);
+  #endif
+
+  return atoi(photoid);
+
 }
 
 int gallery_add_keyword(int peer_socket, uint32_t id_photo, char *keyword){

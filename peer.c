@@ -19,6 +19,7 @@ typedef struct _header{
 
 
 int main(int argc, char const *argv[]) {
+  
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
   socklen_t size_addr;
