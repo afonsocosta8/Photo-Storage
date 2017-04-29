@@ -1,7 +1,3 @@
-typedef struct _header{
-  long	data_length;
-} header;
-
 int gallery_connect(char * host, in_port_t p);
 
 uint32_t gallery_add_photo(int peer_socket, char *file_n);
