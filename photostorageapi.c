@@ -83,17 +83,17 @@ int gallery_connect(char * host, in_port_t p){
 uint32_t gallery_add_photo(int peer_socket, char *file_n){
 
   FILE *img = fopen(file_n, "rb");
-  //fseek(img, 0, SEEK_END);
-  //unsigned long filesize = ftell(img);
-  //fseek(img, 0, SEEK_SET);
+  fseek(img, 0, SEEK_END);
+  size_t filesize = ftell(img);
+  fseek(img, 0, SEEK_SET);
   char buff[] = "ADD";
-  char *buffer = (char*)malloc(sizeof(char)*100);
-  int t;
+  unsigned char *buffer = malloc(filesize);
+  int t, i;
   // store read data into buffer
-  fread(buffer, sizeof(char), 100, img);
+  fread(buffer, sizeof *buffer, filesize, img);
   // send header to client
   header hdr;
-  hdr.data_length = 100;
+  hdr.data_length = filesize;
   send(peer_socket, buff, sizeof(buff), 0);
 
   recv(peer_socket, buff, sizeof(buff), 0);
@@ -101,14 +101,14 @@ uint32_t gallery_add_photo(int peer_socket, char *file_n){
     printf("ERROR\n");
     return 0;
   }
-  //printf("%ld\n", filesize);
+
   send(peer_socket, (&hdr), sizeof(hdr), 0);
-  // send buffer to client
-  send(peer_socket, buffer, 100, 0); // error checking is done in actual code and it sends perfectly
+
+  send(peer_socket, buffer, filesize, 0);
 
   recv(peer_socket, buff, sizeof(buff), 0);
 
-  if(buff!="OK"){
+  if(strcmp(buff,"OK")){
     printf("ERROR\n");
     return 0;
   }

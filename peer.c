@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#define CHUNK_SIZE 512
+
 typedef struct _header{
   long	data_length;
 } header;
@@ -61,9 +63,9 @@ int main(int argc, char const *argv[]) {
 
       nbytes = recv(client_fd, (&hdr), sizeof(hdr), 0);
       printf("received %d bytes --- %ld ---\n", nbytes, hdr.data_length);
-      char *buffer = malloc(sizeof(char)*hdr.data_length);
-      nbytes = recv(client_fd, buffer, sizeof(buffer), 0);
-      printf("received %d bytes --- %s ---\n", nbytes, buffer);
+      unsigned char *buffer = malloc(hdr.data_length);
+
+      nbytes = recv(client_fd, buffer, hdr.data_length, 0);
 
       sprintf(buff, "OK");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
