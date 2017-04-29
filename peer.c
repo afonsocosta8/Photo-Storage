@@ -17,13 +17,14 @@ typedef struct _args{
 
   int mp;
   int p;
-  char *h;
+  char h[100];
 
 }args;
 
 typedef struct _header{
   long	data_length;
 } header;
+
 
 int reg(char *host, int p){
   struct sockaddr_in server_addr;
@@ -136,6 +137,7 @@ int main(int argc, char const *argv[]) {
   char *host, *port, *myport;
   port = calloc(128, sizeof(char));
   host = calloc(128, sizeof(char));
+  myport = calloc(128, sizeof(char));
   in_port_t p, mp;
   pthread_t thr_id;
   args *arguments= (args*)malloc(sizeof(args));
@@ -153,6 +155,7 @@ int main(int argc, char const *argv[]) {
                       break;
 
               case 'p':
+                      printf("%s\n", argv[i+1]);
                       strcpy(port, argv[i+1]);
                       break;
 
@@ -167,11 +170,20 @@ int main(int argc, char const *argv[]) {
               }
       }
   }
+  #ifdef DEBUG
+    printf("\tDEBUG: DECODED ARGS: %s %s %s\n", host, port, myport);
+  #endif
+
   p=atoi(port);
   mp=atoi(myport);
   arguments->mp=mp;
-  arguments->h=host;
+  //strcpy(arguments->h,host);
   arguments->p=p;
+
+  #ifdef DEBUG
+    printf("\tDEBUG: DECODED ARGS: %s %d %d\n", host, p, mp);
+  #endif
+
 
   if(pthread_create(&thr_id, NULL, handle_alive, arguments)!=0){
     printf("ERROR CREATING THREAD FOR READING ALIVES\n");
@@ -186,6 +198,8 @@ int main(int argc, char const *argv[]) {
   struct sockaddr_in client_addr;
   socklen_t size_addr;
   header hdr;
+  char answer[10], photo_name[100];
+  size_t filesize;
 
   char buff[100];
   int nbytes;
@@ -220,19 +234,22 @@ int main(int argc, char const *argv[]) {
       nbytes = recv(client_fd, buff, 100, 0);
       printf("received %d bytes --- %s ---\n", nbytes, buff);
 
-      sprintf(buff, "OK");
-      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
 
-      unsigned char *buffer = malloc(hdr.data_length);
-
-      nbytes = recv(client_fd, buffer, hdr.data_length, 0);
+      sscanf("%s %s %d", answer, photo_name, filesize);
 
       sprintf(buff, "OK");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       printf("replying %d bytes\n", nbytes);
 
-      fwrite(buffer,1,hdr.data_length,fp);
+      unsigned char *buffer = malloc(filesize);
+
+      nbytes = recv(client_fd, buffer, filesize, 0);
+
+      sprintf(buff, "OK");
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+      printf("replying %d bytes\n", nbytes);
+
+      fwrite(buffer,1,filesize,fp);
 
       close(client_fd);
       printf("closing connectin with client\n");

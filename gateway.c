@@ -247,7 +247,6 @@ void * handle_get(void * arg){
 
 
         }
-
       }else{
 
         #ifdef DEBUG
@@ -264,6 +263,7 @@ void * handle_get(void * arg){
 
 
       }
+      close(test_peer_fd);
     }else{
 
       #ifdef DEBUG
@@ -295,6 +295,8 @@ void * handle_get(void * arg){
     #endif
 
   }
+  free(arguments);
+  close(resp_fd);
   return;
 }
 
@@ -329,6 +331,8 @@ void * handle_reg(void * arg){
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
   #endif
 
+  free(arguments);
+  close(resp_fd);
   return;
 }
 

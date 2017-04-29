@@ -65,7 +65,7 @@ int gallery_connect(char * host, in_port_t p){
   if(nbytes==-1){
 
     #ifdef DEBUG
-      printf("\tDEBUG: GATEWAY UNAVAILABLE.");
+      printf("\tDEBUG: GATEWAY UNAVAILABLE.\n");
     #endif
 
     return -1;
@@ -126,7 +126,7 @@ int gallery_connect(char * host, in_port_t p){
 
 	if(sock_fd == -1){
 		perror("ERROR CREATING SOCKET\n");
-	  return -1;
+	  return 0;
 	}
 
   #ifdef DEBUG
@@ -141,7 +141,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%s\n", ip, port);
     #endif
-		return -1;
+		return 0;
 	}
 
   #ifdef DEBUG
@@ -177,16 +177,18 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
-  sprintf(buff, "ADD PHOTO %s SIZE %d", file_name, filesize);
+  sprintf(buff, "ADDPHOTO %s %d", file_name, filesize);
 
   #ifdef DEBUG
-    printf("\tDEBUG: SENDING MESSAGE TO PEER");
+    printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
   #endif
 
   if(send(peer_socket, buff, sizeof(buff), 0)==-1){
     #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER");
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
     #endif
+    fclose(img);
+    close(peer_socket);
     return 0;
   }
 
@@ -197,8 +199,10 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
   nbytes = recv(peer_socket, buff, sizeof(buff), 0);
   if(nbytes == -1){
     #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER");
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
     #endif
+    fclose(img);
+    close(peer_socket);
     return 0;
   }
 
@@ -206,31 +210,41 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
   #endif
 
-  if(strcmp(buff,"OK")!=0)
+  if(strcmp(buff,"OK")!=0){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT DECODE MESSAGE RECEIVED\n");
+    #endif
+    fclose(img);
+    close(peer_socket);
     return 0;
-
+  }
   // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
   fread(buffer, sizeof *buffer, filesize, img);
 
   if(send(peer_socket, buffer, filesize, 0)==-1){
     #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER");
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
     #endif
+    fclose(img);
+    close(peer_socket);
     return 0;
   }
 
   nbytes = recv(peer_socket, buff, sizeof(buff), 0);
   if(nbytes == -1){
     #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER");
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
     #endif
+    fclose(img);
+    close(peer_socket);
     return 0;
   }
+
   #ifdef DEBUG
     printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
   #endif
-  
+
   char answer[10], photoid[10];
   sscanf(buff, "%s %s", answer, photoid);
 
@@ -238,26 +252,402 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     printf("\tDEBUG: DECODED FILEID %s\n", buff);
   #endif
 
-  return atoi(photoid);
+  fclose(img);
+  close(peer_socket);
+  free(buffer);
+  return strtoul(photoid, NULL, 0);
 
 }
 
 int gallery_add_keyword(int peer_socket, uint32_t id_photo, char *keyword){
 
+
+  char query_buff[100], buff[100];
+  int nbytes;
+
+  // PREPARING PROTOCOL MESSAGE TO PEER
+  sprintf(query_buff, "ADDKEY %d %s", id_photo, keyword);
+
+
+
+  // SENDING MESSAGE TO PEER
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+  #endif
+
+  if(send(peer_socket, query_buff, sizeof(query_buff), 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
+
+
+
+  // RECEIVING PEER RESPONSE
+  nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+  if(nbytes == -1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+  #endif
+
+
+
+  //DECODING PEER RESPONSE
+  if(strcmp(buff, "OK")==0){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: ALL OK\n");
+    #endif
+
+    close(peer_socket);
+    return 1;
+
+  }
+
+  if(strcmp(buff, "ERROR")==0){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: PHOTO NOT FOUND\n", nbytes, buff);
+    #endif
+
+    close(peer_socket);
+    return 0;
+  }
+
+  #ifdef DEBUG
+    printf("COULD NOT DECODE MESSAGE\n");
+  #endif
+
+  close(peer_socket);
+  return -1;
+
 }
 
 int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
+  char query_buff[100], buff[100], answer[10];
+  int num_photo_ids;
+  char photo_ids[100];
+  int nbytes;
+
+  // PREPARING PROTOCOL MESSAGE TO PEER
+  sprintf(query_buff, "SEARCH %s", keyword);
+
+
+
+  // SENDING MESSAGE TO PEER
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+  #endif
+
+  if(send(peer_socket, query_buff, sizeof(query_buff), 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
+
+
+
+  // RECEIVING PEER RESPONSE
+  nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+  if(nbytes == -1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+  #endif
+
+
+
+  //DECODING PEER RESPONSE
+  if(strcmp(buff, "ERROR")==0){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: PHOTO NOT FOUND\n");
+    #endif
+
+    close(peer_socket);
+    return 0;
+
+  }
+
+  sscanf(buff, "%s %d %s", answer, num_photo_ids, photo_ids);
+  if(strcmp(answer, "OK")==0){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: ALL OK. DECONDING PHOTO_IDs NOW\n");
+    #endif
+
+
+    // FAZER STRTOK COM PHOTO_IDS PARA IR BUSCAR CADA UM DELES
+    // RESPONSE: OK <num_ids> <photo_id1> .. <photo_idn>
+
+    close(peer_socket);
+    return num_photo_ids;
+  }
+
+
+  #ifdef DEBUG
+    printf("COULD NOT DECODE MESSAGE\n");
+  #endif
+
+  close(peer_socket);
+  return -1;
+
 }
 
-int gallery_delete_photo(int peer_socket, uint32_t id_p){
+int gallery_delete_photo(int peer_socket, uint32_t id_photo){
+
+
+    char query_buff[100], buff[100];
+    int nbytes;
+
+    // PREPARING PROTOCOL MESSAGE TO PEER
+    sprintf(query_buff, "DELETE %d", id_photo);
+
+
+
+    // SENDING MESSAGE TO PEER
+    #ifdef DEBUG
+      printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+    #endif
+
+    if(send(peer_socket, query_buff, sizeof(query_buff), 0)==-1){
+      #ifdef DEBUG
+        printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+      #endif
+      close(peer_socket);
+      return -1;
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+    #endif
+
+
+
+    // RECEIVING PEER RESPONSE
+    nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+    if(nbytes == -1){
+      #ifdef DEBUG
+        printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+      #endif
+      close(peer_socket);
+      return -1;
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+    #endif
+
+
+
+    //DECODING PEER RESPONSE
+    if(strcmp(buff, "OK")==0){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: ALL OK\n");
+      #endif
+
+      close(peer_socket);
+      return 1;
+
+    }
+    if(strcmp(buff, "ERROR")==0){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: PHOTO NOT FOUND\n");
+      #endif
+
+      close(peer_socket);
+      return 0;
+
+    }
+
+    #ifdef DEBUG
+      printf("COULD NOT DECODE MESSAGE\n");
+    #endif
+
+    close(peer_socket);
+    return -1;
 
 }
 
 int gallery_get_photo_name(int peer_socket, uint32_t id_photo, char **photo_name){
 
+
+
+    char query_buff[100], buff[100], answer[10];
+    char name[100];
+    char * ret_name;
+    int nbytes;
+
+    // PREPARING PROTOCOL MESSAGE TO PEER
+    sprintf(query_buff, "GETNAME %d", id_photo);
+
+
+
+    // SENDING MESSAGE TO PEER
+    #ifdef DEBUG
+      printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+    #endif
+
+    if(send(peer_socket, query_buff, sizeof(query_buff), 0)==-1){
+      #ifdef DEBUG
+        printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+      #endif
+      close(peer_socket);
+      return -1;
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+    #endif
+
+
+
+    // RECEIVING PEER RESPONSE
+    nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+    if(nbytes == -1){
+      #ifdef DEBUG
+        printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+      #endif
+      close(peer_socket);
+      return -1;
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+    #endif
+
+
+
+    //DECODING PEER RESPONSE
+    if(strcmp(buff, "ERROR")==0){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: PHOTO NOT FOUND\n");
+      #endif
+
+      close(peer_socket);
+      return 0;
+
+    }
+
+    sscanf(buff, "%s %s", answer, name);
+    if(strcmp(answer, "OK")==0){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: PHOTO NOT FOUND\n");
+      #endif
+      ret_name = (char*)malloc(sizeof(name));
+      strcpy(ret_name, name);
+      photo_name = &ret_name;
+      close(peer_socket);
+      return 1;
+
+    }
+
+    #ifdef DEBUG
+      printf("COULD NOT DECODE MESSAGE\n");
+    #endif
+
+    close(peer_socket);
+    return -1;
+
+
 }
 
 int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
+
+
+  char query_buff[100], buff[100];
+  char name[100];
+  char token[100];
+  int nbytes;
+
+  // PREPARING PROTOCOL MESSAGE TO PEER
+  sprintf(query_buff, "GETPHOTO %d", id_photo);
+
+
+
+  // SENDING MESSAGE TO PEER
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+  #endif
+
+  if(send(peer_socket, query_buff, sizeof(query_buff), 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
+
+  // RECEIVING PEER RESPONSE
+  nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+  if(nbytes == -1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+    #endif
+    close(peer_socket);
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
+  #endif
+
+
+
+  //DECODING PEER RESPONSE
+  // RESPONSE: OK <FILISIZE>
+  if(strcmp(buff, "ERROR")==0){
+
+    #ifdef DEBUG
+      printf("\tDEBUG: PHOTO NOT FOUND\n");
+    #endif
+
+    return 0;
+
+  }
+
+
+  close(peer_socket);
+  return -1;
+
+
+
+
+
+
 
 }
