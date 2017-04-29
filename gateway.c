@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 
 
+
 typedef struct _peer{
 
   char ip[16];
@@ -23,6 +24,14 @@ typedef struct _peerlist{
   peer *beginning;
 
 }peer_list;
+
+typedef struct _args{
+
+  struct sockaddr_in client_addr;
+  peer_list * list;
+
+}args;
+
 
 peer_list *init_peer_list(){
 
@@ -149,20 +158,38 @@ void free_peer_list(peer_list *list){
 
 void * handle_get(void * arg){
 
-  struct sockaddr_in client_addr = *(struct sockaddr_in *)arg;
-  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
   char resp_buff[100];
   int nbytes;
 
-  // GET PEER ADDRESS AND SPRINTF TO buff
+  // GET ARGUMENTS
+  args *arguments = (args*)arg;
+  struct sockaddr_in client_addr = arguments->client_addr;
+  peer_list *list = arguments->list;
 
+  // SEARCHING FOR A PEER IN PEER LIST
   #ifdef DEBUG
-    printf("\t\tDEBUG: SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
+    printf("\t\tDEBUG: SEARCHING FOR A PEER IN PEER LIST\n");
   #endif
+  int port;
+  char ip[16];
+  if(get_peer(list, ip, &port)){
 
-  sprintf(resp_buff, "OK %s:%d", "127.0.0.1", 9000);
+    #ifdef DEBUG
+      printf("\t\tDEBUG: RETRIEVED %s:%d FROM PEER LIST\n", ip, port);
+    #endif
+    sprintf(resp_buff, "OK %s:%d", ip, port);
+
+  }else{
+
+
+
+  }
+
+  // INITIALIZE RESPONSE SOCKET
+  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+  printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
+
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
-  printf("sent %d %s\n", nbytes, resp_buff);
 
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
@@ -206,6 +233,7 @@ int main(){
   // PEERS LIST RELATED
   peer_list *list = init_peer_list();
 
+ /*
   char ip[20];
   int port;
   add_peer_list(list, "192.168.1.10", 8012);
@@ -261,10 +289,10 @@ int main(){
   get_peer(list, ip, &port);
   printf("%s:%d\n",ip,port);
   free_peer_list(list);
+*/
 
 
 
-/*
   #ifdef DEBUG
     printf("\tDEBUG: CREATING SOCKET...\n");
   #endif
@@ -304,7 +332,11 @@ int main(){
         printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
       #endif
 
-      if(pthread_create(&thr_id, NULL, handle_get, &client_addr)!=0){
+      args *arguments= (args*)malloc(sizeof(args));
+      arguments->client_addr = client_addr;
+      arguments->list = list;
+
+      if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
         printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
         exit(-1);
       }
@@ -332,7 +364,7 @@ int main(){
 
 
   }
-  */
+
   exit(0);
 
 
