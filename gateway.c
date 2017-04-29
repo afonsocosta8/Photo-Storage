@@ -177,20 +177,24 @@ void * handle_get(void * arg){
     #ifdef DEBUG
       printf("\t\tDEBUG: RETRIEVED %s:%d FROM PEER LIST\n", ip, port);
     #endif
+    printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, ip, port);
     sprintf(resp_buff, "OK %s:%d", ip, port);
 
   }else{
 
-
+    #ifdef DEBUG
+      printf("\t\tDEBUG: RETRIEVED %s:%d FROM PEER LIST\n", ip, port);
+    #endif
+    printf("NO PEERS TO SERVE CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    sprintf(resp_buff, "ERROR NO PEERS");
 
   }
 
   // INITIALIZE RESPONSE SOCKET
   int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
-  printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
 
+  // SENDING RESPONSE
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
-
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
   #endif
@@ -200,17 +204,32 @@ void * handle_get(void * arg){
 
 void * handle_reg(void * arg){
 
-  struct sockaddr_in client_addr = *(struct sockaddr_in *)arg;
-  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
   char resp_buff[100];
+  int nbytes;
 
-  // ADD PEER TO LIST
+  // GET ARGUMENTS
+  args *arguments = (args*)arg;
+  struct sockaddr_in client_addr = arguments->client_addr;
+  peer_list *list = arguments->list;
 
+  // ADDING PEER TO LIST
+  #ifdef DEBUG
+    printf("\t\tDEBUG: ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+  #endif
+  add_peer_list(list, inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
   #ifdef DEBUG
     printf("\t\tDEBUG: REGISTERING PEER OK\n");
   #endif
+
+  // INITIALIZE RESPONSE SOCKET
+  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  // SENDING RESPONSE
   sprintf(resp_buff, "OK");
   sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
+  #endif
 
   return;
 }
@@ -321,6 +340,7 @@ int main(){
 
     size_addr = sizeof(client_addr);
     nbytes = recvfrom(sock_fd, buff, 100, 0, (struct sockaddr *) &client_addr, &size_addr);
+
     #ifdef DEBUG
       printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port,  buff);
     #endif
@@ -351,6 +371,15 @@ int main(){
       #ifdef DEBUG
         printf("\tDEBUG: DECODED AS REG PEER\n");
       #endif
+
+      args *arguments= (args*)malloc(sizeof(args));
+      arguments->client_addr = client_addr;
+      arguments->list = list;
+
+      if(pthread_create(&thr_id, NULL, handle_reg, arguments)!=0){
+        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+        exit(-1);
+      }
 
 
 
