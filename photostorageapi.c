@@ -179,21 +179,28 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
   // PREPARING PROTOCOL MESSAGE TO PEER
   sprintf(buff, "ADD PHOTO %s SIZE %d", file_name, filesize);
 
-  if(send(peer_socket, buff, sizeof(buff), 0)==-1)
-    return 0;
-
   #ifdef DEBUG
-    printf("\t\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+    printf("\tDEBUG: SENDING MESSAGE TO PEER");
   #endif
 
+  if(send(peer_socket, buff, sizeof(buff), 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER");
+    #endif
+    return 0;
+  }
 
-  // STORE READ DARA INTO BUFFER
-  unsigned char *buffer = malloc(filesize);
-  fread(buffer, sizeof *buffer, filesize, img);
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
 
   nbytes = recv(peer_socket, buff, sizeof(buff), 0);
-  if(nbytes == -1)
+  if(nbytes == -1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER");
+    #endif
     return 0;
+  }
 
   #ifdef DEBUG
     printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
@@ -202,16 +209,28 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
   if(strcmp(buff,"OK")!=0)
     return 0;
 
-  if(send(peer_socket, buffer, filesize, 0)==-1)
+  // STORE READ DARA INTO BUFFER
+  unsigned char *buffer = malloc(filesize);
+  fread(buffer, sizeof *buffer, filesize, img);
+
+  if(send(peer_socket, buffer, filesize, 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER");
+    #endif
     return 0;
+  }
 
   nbytes = recv(peer_socket, buff, sizeof(buff), 0);
-  if(nbytes == -1)
+  if(nbytes == -1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER");
+    #endif
     return 0;
-
+  }
   #ifdef DEBUG
     printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, buff);
   #endif
+  
   char answer[10], photoid[10];
   sscanf(buff, "%s %s", answer, photoid);
 

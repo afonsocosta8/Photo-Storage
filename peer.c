@@ -224,8 +224,6 @@ int main(int argc, char const *argv[]) {
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       printf("replying %d bytes\n", nbytes);
 
-      nbytes = recv(client_fd, (&hdr), sizeof(hdr), 0);
-      printf("received %d bytes --- %ld ---\n", nbytes, hdr.data_length);
       unsigned char *buffer = malloc(hdr.data_length);
 
       nbytes = recv(client_fd, buffer, hdr.data_length, 0);
