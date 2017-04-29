@@ -10,5 +10,5 @@ gatewaydebug:
 	gcc -std=c99 -DDEBUG gateway.c -o gateway
 clientdebug:
 	gcc -DDEBUG -g -std=c99 client.c photostorageapi.c -o client
-client:
-	gcc -std=c99 client.c photostorageapi.c -o client
+client: client.c photostorageapi.c
+	gcc -o client -g client.c photostorageapi.c

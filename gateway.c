@@ -21,8 +21,9 @@ void * handle_get(void * arg){
     printf("\t\tDEBUG: SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, "192.168.2.2", 5000);
   #endif
 
-  sprintf(resp_buff, "OK %s:%d", "192.168.2.2", 5000);
+  sprintf(resp_buff, "OK %s:%d", "127.0.0.1", 9000);
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  printf("sent %d %s\n", nbytes, resp_buff);
 
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
@@ -80,7 +81,7 @@ int main(){
   #endif
 
   local_addr.sin_family = AF_INET;
-	local_addr.sin_port= htons(9000);
+	local_addr.sin_port= htons(9001);
 	local_addr.sin_addr.s_addr= INADDR_ANY;
   if(bind(sock_fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) == -1){
     perror("ERROR BINDIND");

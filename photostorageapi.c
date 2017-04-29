@@ -9,15 +9,20 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include "photostorageapi.h"
+
 
 int gallery_connect(char * host, in_port_t p){
 
   struct sockaddr_in server_addr;
 	struct sockaddr_in client_addr;
 	char buff[]="GET PEER";
-  int port;
-  char ip[20];
+  char *port;
+  char *ipport;
+  char *ip;
+  char gb[4];
 	int nbytes;
+  char *pt;
 
 	int sock_fd= socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -36,11 +41,24 @@ int gallery_connect(char * host, in_port_t p){
 	                    buff, strlen(buff)+1, 0,
 	                    (const struct sockaddr *) &server_addr, sizeof(server_addr));
 	printf("sent %d %s\n", nbytes, buff);
-  printf("à espera de receber\n");
 	nbytes = recv(sock_fd, buff, 20, 0);
-  printf("recebi\n");
-  sscanf(buff, "OK %s:%d", ip, port);
-	printf("received %d bytes --- ip = %s port = %d ---\n", nbytes, buff, port);
+  //sscanf(buff, "%s %s",gb, ipport);
+  ipport = buff + 3;
+  /*ip = strtok (ipport,":");
+  port = strtok (NULL,"\0");*/
+  int i = 0;
+  pt = strtok (ipport,":");
+  while (pt != NULL) {
+    if(i==0)
+      ip=pt;
+    else
+      port = pt;
+    pt = strtok (NULL, ":");
+    i++;
+  }
+
+
+	printf("received %d bytes --- ip = %s port = %s ---\n", nbytes, ip, port);
   //---------------------------------------------------------------------------------------------------------
   sock_fd= socket(AF_INET, SOCK_STREAM, 0);
 
@@ -51,9 +69,8 @@ int gallery_connect(char * host, in_port_t p){
 	printf("TCP socket created. Ready to connect\n");
 	server_addr.sin_family = AF_INET;
 	// this values can be read from the keyboard
-	server_addr.sin_port= htons(port);
+	server_addr.sin_port= htons(atoi(port));
 	inet_aton(ip, &server_addr.sin_addr);
-
 	if( -1 == connect(sock_fd,
 			(const struct sockaddr *) &server_addr,
 			sizeof(server_addr))){
@@ -65,6 +82,36 @@ int gallery_connect(char * host, in_port_t p){
 
 uint32_t gallery_add_photo(int peer_socket, char *file_n){
 
+  FILE *img = fopen(file_n, "rb");
+  //fseek(img, 0, SEEK_END);
+  //unsigned long filesize = ftell(img);
+  //fseek(img, 0, SEEK_SET);
+  char buff[] = "ADD";
+  char *buffer = (char*)malloc(sizeof(char)*100);
+  int t;
+  // store read data into buffer
+  fread(buffer, sizeof(char), 100, img);
+  // send header to client
+  header hdr;
+  hdr.data_length = 100;
+  send(peer_socket, buff, sizeof(buff), 0);
+
+  recv(peer_socket, buff, sizeof(buff), 0);
+  if(strcmp(buff,"OK")){
+    printf("ERROR\n");
+    return 0;
+  }
+  //printf("%ld\n", filesize);
+  send(peer_socket, (&hdr), sizeof(hdr), 0);
+  // send buffer to client
+  send(peer_socket, buffer, 100, 0); // error checking is done in actual code and it sends perfectly
+
+  recv(peer_socket, buff, sizeof(buff), 0);
+
+  if(buff!="OK"){
+    printf("ERROR\n");
+    return 0;
+  }
 }
 
 int gallery_add_keyword(int peer_socket, uint32_t id_photo, char *keyword){

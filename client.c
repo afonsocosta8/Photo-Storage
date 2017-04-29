@@ -16,6 +16,7 @@ int main(int argc, char const *argv[]) {
   port = calloc(128, sizeof(char));
   host = calloc(128, sizeof(char));
   in_port_t p;
+  int psock;
   int i;
   if(argc!=5) { /* Number of arguments inserted is not correct */
       printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");
@@ -40,6 +41,7 @@ int main(int argc, char const *argv[]) {
       }
   }
   p=atoi(port);
-  gallery_connect(host, p);
+  psock = gallery_connect(host, p);
+  gallery_add_photo(psock, "/home/afonso/Downloads/ist.jpg");
   return 0;
 }
