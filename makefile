@@ -1,4 +1,4 @@
-all:
+all: 
 	gcc -std=c99 gateway.c -o gateway 
 	gcc -std=c99 client.c photostorageapi.c -o client
 	gcc -std=c99 peer.c -o peer
