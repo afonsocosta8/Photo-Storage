@@ -56,7 +56,6 @@ int gallery_connect(char * host, in_port_t p){
 	inet_aton(host, &server_addr.sin_addr);
 
 
-
   // SENDING MESSAGE TO GATEWAY
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO GATEWAY...\n");
@@ -117,6 +116,7 @@ int gallery_connect(char * host, in_port_t p){
     pt = strtok (NULL, ":");
     i++;
   }
+
   #ifdef DEBUG
     printf("\tDEBUG: DECODED MESSAGE IP:PORT AS %s:%s\n", ip, port);
   #endif
