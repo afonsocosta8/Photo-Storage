@@ -42,10 +42,7 @@ int gallery_connect(char * host, in_port_t p){
 	                    (const struct sockaddr *) &server_addr, sizeof(server_addr));
 	printf("sent %d %s\n", nbytes, buff);
 	nbytes = recv(sock_fd, buff, 20, 0);
-  //sscanf(buff, "%s %s",gb, ipport);
   ipport = buff + 3;
-  /*ip = strtok (ipport,":");
-  port = strtok (NULL,"\0");*/
   int i = 0;
   pt = strtok (ipport,":");
   while (pt != NULL) {
@@ -56,8 +53,6 @@ int gallery_connect(char * host, in_port_t p){
     pt = strtok (NULL, ":");
     i++;
   }
-
-
 	printf("received %d bytes --- ip = %s port = %s ---\n", nbytes, ip, port);
   //---------------------------------------------------------------------------------------------------------
   sock_fd= socket(AF_INET, SOCK_STREAM, 0);
