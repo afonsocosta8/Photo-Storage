@@ -331,80 +331,80 @@ int main(int argc, char const *argv[]) {
     printf("\tDEBUG: THREAD CREATED\n");
   #endif
 
-  while(1);
 
 
 
-/*
-
+  // NEXT TASK: SETTING UP A TCP SERVER
   #ifdef DEBUG
-    printf("\tDEBUG: THREAD CREATED\n");
+    printf("\tDEBUG: SETTING UP TCP SERVER\n");
   #endif
-
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
   socklen_t size_addr;
-  header hdr;
-  char answer[10], photo_name[100];
-  size_t filesize;
+  char client_query[100];
 
-  char buff[100];
-  int nbytes;
-  FILE *fp = fopen("testimg/ist.jpg","wb");
+  #ifdef DEBUG
+    printf("\tDEBUG: CREATING TCP SOCKET\n");
+  #endif
   int sock_fd= socket(AF_INET, SOCK_STREAM, 0);
-
-  if (sock_fd == -1){
-    perror("socket: ");
+  int client_fd;
+  if(sock_fd == -1){
+    printf("ERROR CREATING TCP SOCKET");
     exit(-1);
   }
-
-
   local_addr.sin_family = AF_INET;
-  local_addr.sin_port= htons(9000);
+  local_addr.sin_port = htons(mp);
   local_addr.sin_addr.s_addr= INADDR_ANY;
+  #ifdef DEBUG
+    printf("\tDEBUG: BINDING TCP SERVER\n");
+  #endif
+
   int err = bind(sock_fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
   if(err == -1) {
-    perror("bind");
+    perror("ERROR BINDING TCP SOCKET");
     exit(-1);
   }
-  printf(" socket created and binded \n");
-
+  #ifdef DEBUG
+    printf("\tDEBUG: LISTENING TCP SOCKET\n");
+  #endif
   listen(sock_fd, 5);
 
+  printf("READY TO ACCEPT CLIENT CONNECTIONS\n");
 
   while(1){
-    printf("Ready to accept connections\n");
-    int client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
 
-    //if(fork()==0){
-      printf("Accepted one connection from %s \n", inet_ntoa(client_addr.sin_addr));
-      nbytes = recv(client_fd, buff, 100, 0);
-      printf("received %d bytes --- %s ---\n", nbytes, buff);
+    client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
+    printf("ACCEPTED ONE CONNECTION FROM %s:\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
 
-      sscanf("%s %s %d", answer, photo_name, filesize);
+    // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY
 
-      sprintf(buff, "OK");
-      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
+    /*
+    nbytes = recv(client_fd, client_query, 100, 0);
+    printf("received %d bytes --- %s ---\n", nbytes, buff);
 
-      unsigned char *buffer = malloc(filesize);
 
-      nbytes = recv(client_fd, buffer, filesize, 0);
+    sscanf("%s %s %d", answer, photo_name, filesize);
 
-      sprintf(buff, "OK");
-      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
+    sprintf(buff, "OK");
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+    printf("replying %d bytes\n", nbytes);
 
-      fwrite(buffer,1,filesize,fp);
+    unsigned char *buffer = malloc(filesize);
 
-      close(client_fd);
-      printf("closing connectin with client\n");
-      exit(0);
-    //}
+    nbytes = recv(client_fd, buffer, filesize, 0);
+
+    sprintf(buff, "OK");
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+    printf("replying %d bytes\n", nbytes);
+
+    fwrite(buffer,1,filesize,fp);
+
+    close(client_fd);
+    printf("closing connectin with client\n");
+    exit(0);
+    */
   }
 
-  */
   exit(0);
-  return 0;
 }
