@@ -163,6 +163,8 @@ void * handle_get(void * arg){
   struct sockaddr_in peer_addr;
   time_t start, end;
   socklen_t size_addr;
+  struct timeval tv;
+  tv.tv_sec = 1;
 
   // GET ARGUMENTS
   args *arguments = (args*)arg;
@@ -186,6 +188,16 @@ void * handle_get(void * arg){
       // TESTING IF PEER IS ALIVE
       // PREPARING MESSAGE
       test_peer_fd = socket(AF_INET, SOCK_DGRAM, 0);
+      if(test_peer_fd == -1){
+    		perror("ERROR CREATING SOCKET\n");
+        printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
+    	  return;
+    	}
+      if(setsockopt(test_peer_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
+        perror("ERROR SETTING SOCKET OPTS\n");
+        printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
+    	  return;
+      }
       strcpy(test_peer_query, "UALIVE?");
       peer_addr.sin_family = AF_INET;
     	peer_addr.sin_port = htons(port);
@@ -196,11 +208,11 @@ void * handle_get(void * arg){
         print_peer_list(list);
         printf("\t\tDEBUG: RETRIEVED %s:%d FROM PEER LIST\n\t\tDEBUG: SENDING UALIVE? TO PEER\n", ip, port);
       #endif
-
-      if(sendto(test_peer_fd, test_peer_query, strlen(test_peer_query)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr))!=-1){
+      nbytes = sendto(test_peer_fd, test_peer_query, strlen(test_peer_query)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+      if(nbytes!=-1){
 
         #ifdef DEBUG
-          printf("\t\tDEBUG: SENT TO PEER %s:%d --- %s ---\n", inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port, test_peer_query);
+          printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port, test_peer_query);
         #endif
 
         // WAITING FOR PEER RESPONSE. TIMEOUT = 1sec
@@ -208,13 +220,7 @@ void * handle_get(void * arg){
           printf("\t\tDEBUG: WAITING FOR PEER RESPONSE.\n");
         #endif
 
-        time(&start);
-        time(&end);
-        nbytes = 0;
-        while( (difftime(end, start) < 1) && nbytes < 0 ){
-          nbytes = recvfrom(test_peer_fd, buff, 100, 0, (struct sockaddr *) &peer_addr, &size_addr);
-          time(&end);
-        }
+        nbytes = recvfrom(test_peer_fd, buff, 100, 0, (struct sockaddr *) &peer_addr, &size_addr);
 
         #ifdef DEBUG
           printf("\t\tDEBUG: ENDED WAITING FOR PEER RESPONSE.\n");
@@ -309,6 +315,8 @@ void * handle_reg(void * arg){
   args *arguments = (args*)arg;
   struct sockaddr_in client_addr = arguments->client_addr;
   peer_list *list = arguments->list;
+  struct timeval tv;
+  tv.tv_sec = 1;
 
   // ADDING PEER TO LIST
   #ifdef DEBUG

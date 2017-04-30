@@ -628,8 +628,8 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
 
 
-  //DECODING PEER RESPONSE
-  // RESPONSE: OK <FILISIZE>
+  // DECODING PEER RESPONSE
+  // RESPONSE: OK <FILESIZE>
   if(strcmp(buff, "ERROR")==0){
 
     #ifdef DEBUG
