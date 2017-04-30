@@ -59,7 +59,7 @@ int gallery_connect(char * host, in_port_t p){
 
 
 
-  // PREPATING TO SEND MESSAGE TO GATEWAY
+  // PREPARING TO SEND MESSAGE TO GATEWAY
   #ifdef DEBUG
     printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
   #endif

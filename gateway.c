@@ -205,7 +205,7 @@ void * handle_get(void * arg){
       }
       strcpy(test_peer_query, "UALIVE?");
       peer_addr.sin_family = AF_INET;
-    	peer_addr.sin_port = htons(port);
+    	peer_addr.sin_port = port;
     	inet_aton(ip, &peer_addr.sin_addr);
 
       // SENDING UALIVE? TO PEER
@@ -229,8 +229,8 @@ void * handle_get(void * arg){
 
         #ifdef DEBUG
           printf("\t\tDEBUG: ENDED WAITING FOR PEER RESPONSE.\n");
+          printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port,  buff);
         #endif
-
         if(nbytes>0){
 
           // PEER IS ALIVE. PREPARING RESPONSE TO CLIENT

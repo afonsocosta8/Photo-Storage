@@ -43,6 +43,6 @@ int main(int argc, char const *argv[]) {
   p=atoi(port);
   psock = gallery_connect(host, p);
   if(psock>0)
-    gallery_add_photo(psock, "testimg/ist.jpg");
+  //  gallery_add_photo(psock, "testimg/ist.jpg");
   return 0;
 }
