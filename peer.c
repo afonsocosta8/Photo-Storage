@@ -203,7 +203,7 @@ int main(int argc, char const *argv[]) {
 
   char buff[100];
   int nbytes;
-  FILE *fp = fopen("/home/afonso/Documents/ist1.jpg","wb");
+  FILE *fp = fopen("testimg/ist.jpg","wb");
   int sock_fd= socket(AF_INET, SOCK_STREAM, 0);
 
   if (sock_fd == -1){

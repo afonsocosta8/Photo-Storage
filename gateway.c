@@ -164,7 +164,8 @@ void * handle_get(void * arg){
   time_t start, end;
   socklen_t size_addr;
   struct timeval tv;
-  tv.tv_sec = 1;
+  tv.tv_sec = 0;
+  tv.tv_usec = 500000;
 
   // GET ARGUMENTS
   args *arguments = (args*)arg;
@@ -189,14 +190,18 @@ void * handle_get(void * arg){
       // PREPARING MESSAGE
       test_peer_fd = socket(AF_INET, SOCK_DGRAM, 0);
       if(test_peer_fd == -1){
-    		perror("ERROR CREATING SOCKET\n");
-        printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
-    	  return;
+        perror("ERROR CREATING SOCKET\n");
+        #ifdef DEBUG
+          printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
+        #endif
+        return;
     	}
       if(setsockopt(test_peer_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
         perror("ERROR SETTING SOCKET OPTS\n");
-        printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
-    	  return;
+        #ifdef DEBUG
+          printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
+        #endif
+        return;
       }
       strcpy(test_peer_query, "UALIVE?");
       peer_addr.sin_family = AF_INET;
