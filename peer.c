@@ -187,7 +187,6 @@ int main(int argc, char const *argv[]) {
   char port[10], host[20], myport[10];
   in_port_t p, mp;
   pthread_t thr_id;
-  int psock;
   int i;
   int get_peer_fd;
   int nbytes;
@@ -345,7 +344,6 @@ int main(int argc, char const *argv[]) {
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
   socklen_t size_addr;
-  char client_query[100];
 
   #ifdef DEBUG
     printf("\tDEBUG: CREATING TCP SOCKET\n");

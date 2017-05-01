@@ -16,17 +16,14 @@
 int gallery_connect(char * host, in_port_t p){
 
   struct sockaddr_in server_addr;
-	struct sockaddr_in client_addr;
 	char query_buff[]="GET PEER";
   char buff[100];
   char *port;
   char *ipport;
   char *ip;
-  char gb[4];
 	int nbytes;
   char *pt;
   int sock_fd;
-  time_t start, end;
   struct timeval tv;
   tv.tv_sec = 2;
 
@@ -158,7 +155,7 @@ int gallery_connect(char * host, in_port_t p){
 	server_addr.sin_port= htons(atoi(port));
 	inet_aton(ip, &server_addr.sin_addr);
 
-	if(connect(sock_fd, (const struct sockaddr *) &server_addr, sizeof(server_addr)==-1)){
+	if(connect(sock_fd, (const struct sockaddr *) &server_addr, sizeof(server_addr))==-1){
     #ifdef DEBUG
       printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%s\n", ip, port);
     #endif
@@ -177,7 +174,6 @@ int gallery_connect(char * host, in_port_t p){
 
 uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
-  int t, i;
   char buff[100];
   int nbytes;
 
@@ -425,7 +421,7 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
   }
 
-  sscanf(buff, "%s %d %s", answer, num_photo_ids, photo_ids);
+  sscanf(buff, "%s %d %s", answer, &num_photo_ids, photo_ids);
   if(strcmp(answer, "OK")==0){
 
     #ifdef DEBUG
@@ -627,8 +623,6 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
 
   char query_buff[100], buff[100];
-  char name[100];
-  char token[100];
   int nbytes;
 
   // PREPARING PROTOCOL MESSAGE TO PEER

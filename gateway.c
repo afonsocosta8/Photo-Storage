@@ -161,7 +161,6 @@ void * handle_get(void * arg){
   int test_peer_fd;
   char test_peer_query[10];
   struct sockaddr_in peer_addr;
-  time_t start, end;
   socklen_t size_addr;
   struct timeval tv;
   tv.tv_sec = 0;
@@ -320,8 +319,6 @@ void * handle_reg(void * arg){
   args *arguments = (args*)arg;
   struct sockaddr_in client_addr = arguments->client_addr;
   peer_list *list = arguments->list;
-  struct timeval tv;
-  tv.tv_sec = 1;
 
   // ADDING PEER TO LIST
   #ifdef DEBUG
