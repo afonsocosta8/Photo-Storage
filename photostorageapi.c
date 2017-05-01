@@ -129,6 +129,8 @@ int gallery_connect(char * host, in_port_t p){
     printf("\tDEBUG: DECODED MESSAGE IP:PORT AS %s:%s\n", ip, port);
   #endif
 
+
+
   // CREATING TCP SOCKET TO CONNECT TO PEER
   sock_fd= socket(AF_INET, SOCK_STREAM, 0);
   if(sock_fd == -1){
@@ -138,7 +140,7 @@ int gallery_connect(char * host, in_port_t p){
     #endif
     return 0;
   }
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
+  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0){
     perror("ERROR SETTING SOCKET OPTS\n");
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
@@ -149,6 +151,9 @@ int gallery_connect(char * host, in_port_t p){
     printf("\tDEBUG: TCP SOCKET %d CREATED\n", sock_fd);
   #endif
 
+
+
+  // CONNECTING TO PEER
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port= htons(atoi(port));
 	inet_aton(ip, &server_addr.sin_addr);

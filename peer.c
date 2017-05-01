@@ -369,15 +369,24 @@ int main(int argc, char const *argv[]) {
   #endif
   listen(sock_fd, 5);
 
+
+
+
+
+  // READY TO ACCEPT CLIENTS
   printf("READY TO ACCEPT CLIENT CONNECTIONS\n");
 
   while(1){
 
+    #ifdef DEBUG
+      printf("\tDEBUG: WAITING FOR CLIENTS...\n");
+    #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
-    printf("ACCEPTED ONE CONNECTION FROM %s:\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    printf("ACCEPTED ONE CONNECTION FROM %s:%s\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
 
     // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY
+
 
     /*
     nbytes = recv(client_fd, client_query, 100, 0);
