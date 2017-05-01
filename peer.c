@@ -144,7 +144,7 @@ void * handle_alive(void * arg){
 
 
   // CHANGING PEER SOCKET RCV TIMEOUT TO ANSWER UALIVE CALLS
-  tv.tv_usec = 0;
+  tv.tv_sec = 0;
   if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
     perror("ERROR SETTING SOCKET TIMEOUT\n");
     #ifdef DEBUG
@@ -192,7 +192,8 @@ int main(int argc, char const *argv[]) {
   int get_peer_fd;
   int nbytes;
   struct timeval tv;
-  tv.tv_sec = 1;
+  tv.tv_sec       = 1;
+  tv.tv_usec      = 500000;
 
   // DECODING INPUT ARGUMENTS
   if(argc!=7){
