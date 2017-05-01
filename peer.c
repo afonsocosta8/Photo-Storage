@@ -38,8 +38,7 @@ void * handle_alive(void * arg){
   int p,mp;
   int sock_fd;
   struct timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 500000;
+  tv.tv_sec = 1;
 
   #ifdef DEBUG
     printf("\t\tDEBUG: HELLO IM A NEW THREAD...\n");
@@ -145,7 +144,7 @@ void * handle_alive(void * arg){
 
 
   // CHANGING PEER SOCKET RCV TIMEOUT TO ANSWER UALIVE CALLS
-  tv.tv_usec = 0;
+  tv.tv_sec = 0;
   if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
     perror("ERROR SETTING SOCKET TIMEOUT\n");
     #ifdef DEBUG
@@ -188,12 +187,12 @@ int main(int argc, char const *argv[]) {
   char port[10], host[20], myport[10];
   in_port_t p, mp;
   pthread_t thr_id;
-  int psock;
   int i;
   int get_peer_fd;
   int nbytes;
   struct timeval tv;
-  tv.tv_sec = 2;
+  tv.tv_sec       = 1;
+  tv.tv_usec      = 500000;
 
   // DECODING INPUT ARGUMENTS
   if(argc!=7){
@@ -277,7 +276,7 @@ int main(int argc, char const *argv[]) {
     exit(-1);
   }
   #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(gateway_addr.sin_addr), gateway_addr.sin_port, get_peer_query);
+    printf("\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(gateway_addr.sin_addr), ntohs(gateway_addr.sin_port), get_peer_query);
   #endif
 
 
@@ -332,6 +331,10 @@ int main(int argc, char const *argv[]) {
   #endif
 
 
+  #ifdef DEBUG
+    printf("\tDEBUG: PORT TO TCP STREAM: %d\n", mp);
+  #endif
+
 
 
   // NEXT TASK: SETTING UP A TCP SERVER
@@ -341,7 +344,6 @@ int main(int argc, char const *argv[]) {
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
   socklen_t size_addr;
-  char client_query[100];
 
   #ifdef DEBUG
     printf("\tDEBUG: CREATING TCP SOCKET\n");
@@ -382,7 +384,7 @@ int main(int argc, char const *argv[]) {
       printf("\tDEBUG: WAITING FOR CLIENTS...\n");
     #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
-    printf("ACCEPTED ONE CONNECTION FROM %s:%s\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
 
     // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY

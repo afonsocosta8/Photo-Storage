@@ -1,4 +1,190 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <pthread.h>
 #include "data_structs.h"
+
+
+
+keyword_list *init_keyword_list(){
+
+  keyword_list *keys = (keyword_list*)malloc(sizeof(keyword_list));
+
+  keys->list = NULL;
+
+  return keys;
+
+}
+
+void add_keyword_list(keyword_list *keys, char *key){
+
+  keyword *new = (keyword*)malloc(sizeof(keyword));
+
+  strcpy(new->key, key);
+  new->next = NULL;
+
+  if(keys->list == NULL){
+
+    keys->list = new;
+
+  }else{
+
+    keyword * aux;
+    for(aux = keys->list; aux->next!=NULL; aux=aux->next);
+    aux->next = new;
+
+  }
+}
+
+int search_keyword_list(keyword_list *list, char *word){
+  keyword*aux;
+  if(list->list!=NULL)
+    for(aux = list->list; aux != NULL; aux=aux->next)
+      if(strcmp(aux->key, word)==0)
+        return 1;
+
+  return 0;
+
+}
+
+
+void print_keyword_list(keyword_list *list){
+
+  keyword *aux;
+  int i;
+
+  printf("\t\t\tDEBUG: KEYWORD LIST:\n");
+  if(list->list!=NULL)
+    for(i=1, aux = list->list; aux != NULL; aux=aux->next, i++)
+      printf("\t\t\tDEBUG: KEYWORD %s\n", aux->key);
+}
+
+void free_keyword_list(keyword_list *list){
+
+  if(list->list!=NULL){
+    keyword *actual, *previous;
+    actual = list->list;
+    while(actual!=NULL){
+      previous = actual;
+      actual = actual->next;
+      free(previous);
+    }
+  }
+  free(list);
+
+}
+
+
+
+
+
+photo_list *init_photo_list(){
+
+  photo_list *photos = (photo_list*)malloc(sizeof(photo_list));
+
+  photos->list = NULL;
+
+  return photos;
+
+}
+
+void add_photo_list(photo_list *photos, char *name, uint32_t id){
+
+  photo *new = (photo*)malloc(sizeof(photo));
+
+
+  strcpy(new->name, name);
+  new->id       = id;
+  new->keywords = init_keyword_list();
+  new->next     = NULL;
+
+  if(photos->list == NULL){
+
+    photos->list = new;
+
+  }else{
+
+    photo * aux;
+    for(aux = photos->list; aux->next!=NULL; aux=aux->next);
+    aux->next = new;
+
+  }
+}
+
+
+/*
+int search_photo_list(photo_list *list, char *word){
+
+  if(list->list!=NULL)
+    for(aux = list->list; aux != NULL; aux=aux->next)
+      if(strcmp(aux->key, word)==0)
+        return 1;
+
+  return 0;
+
+}
+
+
+void print_keyword_list(keyword_list *list){
+
+  keyword *aux;
+  int i;
+
+  printf("\t\t\tDEBUG: KEYWORD LIST:\n");
+  if(list->list!=NULL)
+    for(i=1, aux = list->list; aux != NULL; aux=aux->next, i++)
+      printf("\t\t\tDEBUG: KEYWORD %s\n", aux->key);
+}
+
+void free_keyword_list(keyword_list *list){
+
+  if(list->list!=NULL){
+    keyword *actual, *previous;
+    actual = list->list;
+    while(actual!=NULL){
+      previous = actual;
+      actual = actual->next;
+      free(previous);
+    }
+  }
+  free(list);
+
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// GATEWAY
+
 
 peer_list *init_peer_list(){
 
