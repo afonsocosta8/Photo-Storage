@@ -278,7 +278,7 @@ void * handle_get(void * arg){
     }else{
 
       #ifdef DEBUG
-        printf("\t\tDEBUG: NO PEERS ON PEER LIST\n", ip, port);
+        printf("\t\tDEBUG: NO PEERS ON PEER LIST\n");
       #endif
 
       printf("NO PEERS TO SERVE CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);

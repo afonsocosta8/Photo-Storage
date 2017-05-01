@@ -346,7 +346,7 @@ int gallery_add_keyword(int peer_socket, uint32_t id_photo, char *keyword){
   if(strcmp(buff, "ERROR")==0){
 
     #ifdef DEBUG
-      printf("\tDEBUG: PHOTO NOT FOUND\n", nbytes, buff);
+      printf("\tDEBUG: PHOTO NOT FOUND\n");
     #endif
 
     close(peer_socket);
