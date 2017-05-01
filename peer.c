@@ -25,6 +25,80 @@ typedef struct _header{
   long	data_length;
 } header;
 
+uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
+  unsigned char *buffer = malloc(filesize);
+  FILE *img = fopen(photo_name, "wb");
+  int nbytes;
+  uint32_t photo_id;
+
+  nbytes = recv(client_fd, buffer, filesize, 0);
+
+  fwrite(buffer,1,filesize,img);
+
+  
+
+  return photo_id;
+}
+
+
+void * handle_client(void * arg){
+
+  int client_fd = *(int*)arg;
+  int nbytes;
+  char client_query[100];
+  char buff[100];
+  char answer[10];
+  nbytes = recv(client_fd, client_query, 100, 0);
+  printf("received %d bytes --- %s ---\n", nbytes, client_query);
+
+  if(strstr(client_query, "ADDPHOTO") != NULL) {
+
+    char photo_name[30];
+    unsigned long filesize;
+    uint32_t photo_id;
+
+    sprintf(buff, "OK");
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+    printf("replying %d bytes\n", nbytes);
+
+    sscanf(client_query, "%s %s %lu", answer, photo_name, &filesize);
+    photo_id = add_photo(client_fd, photo_name, filesize);
+    if (photo_id!=0) {
+      sprintf(buff, "OK");
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+      printf("replying %d bytes\n", nbytes);
+    }else{
+      printf("ERROR. COULDN'T STORE PHOTO\n");
+      sprintf(buff, "ERROR");
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+      printf("replying %d bytes\n", nbytes);
+    }
+
+  }/*else if(strstr(client_query, "ADDKEY") != NULL) {
+    char keyword[30];
+    uint32_t photo_id;
+    sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
+    add_key(client_fd, photo_id, keyword);
+  }else if(strstr(client_query, "SEARCH") != NULL) {
+    char keyword[30];
+    uint32_t *ids;
+    sscanf(client_query, "%s %s", answer, keyword);
+    int num_ids = search(client_fd, keyword, ids);
+  }else if(strstr(client_query, "DELETE") != NULL) {
+    uint32_t photo_id;
+    sscanf(client_query, "%s %d", answer, photo_id);
+    delete_photo(client_fd, photo_id);
+  }else if(strstr(client_query, "GETNAME") != NULL) {
+    uint32_t photo_id;
+    char *name;
+    sscanf(client_query, "%s %d", answer, photo_id);
+    get_name(client_fd, photo_id, name);
+  }else if(strstr(client_query, "GETPHOTO") != NULL) {
+    uint32_t photo_id;
+    sscanf(client_query, "%s %d", answer, photo_id);
+    get_photo(client_fd, photo_id);
+  }*/
+}
 
 void * handle_alive(void * arg){
 
@@ -386,6 +460,14 @@ int main(int argc, char const *argv[]) {
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
     printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
+    if(pthread_create(&thr_id, NULL, handle_client, &client_fd)!=0){
+      printf("ERROR CREATING THREAD FOR CLIENT\n");
+      exit(-1);
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: CREATED THREAD FOR CLIENT\n");
+    #endif
 
     // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY
 
