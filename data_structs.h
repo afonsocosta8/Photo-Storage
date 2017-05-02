@@ -14,13 +14,6 @@ typedef struct _peerlist{
 
 }peer_list;
 
-typedef struct _args{
-
-  struct sockaddr_in client_addr;
-  peer_list * list;
-
-}args;
-
 
 typedef struct _keyword{
 
@@ -49,6 +42,7 @@ typedef struct _photo{
 typedef struct _photolist{
 
   photo *list;
+  int total;
 
 }photo_list;
 

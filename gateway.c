@@ -10,6 +10,14 @@
 #include "data_structs.h"
 
 
+typedef struct _args{
+
+  struct sockaddr_in client_addr;
+  peer_list * list;
+
+}args;
+
+
 void * handle_get(void * arg){
 
   // CONNECTIONS RELATED

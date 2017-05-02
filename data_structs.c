@@ -45,7 +45,9 @@ void add_keyword_list(keyword_list *keys, char *key){
 }
 
 int search_keyword_list(keyword_list *list, char *word){
+
   keyword*aux;
+
   if(list->list!=NULL)
     for(aux = list->list; aux != NULL; aux=aux->next)
       if(strcmp(aux->key, word)==0)
@@ -61,7 +63,7 @@ void print_keyword_list(keyword_list *list){
   keyword *aux;
   int i;
 
-  printf("\t\t\tDEBUG: KEYWORD LIST:\n");
+  printf("\t\tDEBUG: KEYWORD LIST:\n");
   if(list->list!=NULL)
     for(i=1, aux = list->list; aux != NULL; aux=aux->next, i++)
       printf("\t\t\tDEBUG: KEYWORD %s\n", aux->key);
@@ -85,21 +87,22 @@ void free_keyword_list(keyword_list *list){
 
 
 
-
 photo_list *init_photo_list(){
 
   photo_list *photos = (photo_list*)malloc(sizeof(photo_list));
 
   photos->list = NULL;
+  photos->total = 0;
 
   return photos;
 
 }
 
-void add_photo_list(photo_list *photos, char *name, uint32_t id){
+
+
+void add_photo(photo_list *photos, char *name, uint32_t id){
 
   photo *new = (photo*)malloc(sizeof(photo));
-
 
   strcpy(new->name, name);
   new->id       = id;
@@ -117,48 +120,104 @@ void add_photo_list(photo_list *photos, char *name, uint32_t id){
     aux->next = new;
 
   }
+
 }
 
 
-/*
-int search_photo_list(photo_list *list, char *word){
 
-  if(list->list!=NULL)
-    for(aux = list->list; aux != NULL; aux=aux->next)
-      if(strcmp(aux->key, word)==0)
-        return 1;
+photo * search_photo_by_id(photo_list *photos, uint32_t id){
+  photo *aux;
+
+  if(photos->list!=NULL)
+    for(aux = photos->list; aux != NULL; aux=aux->next)
+      if(aux->id == id)
+        return aux;
+
+  return NULL;
+
+}
+
+
+
+int add_keyword_photo(photo_list *photos, uint32_t id, char *keyword){
+
+  photo * target = search_photo_by_id(photos, id);
+  if(target!=NULL){
+    add_keyword_list(target->keywords, keyword);
+    return 1;
+  }
 
   return 0;
+}
+
+
+
+int get_photo_name(photo_list *photos, uint32_t id, char *name){
+
+  photo * target = search_photo_by_id(photos, id);
+  if(target!=NULL){
+    strcpy(name, target->name);
+    return 1;
+  }
+
+  return 0;
+}
+
+
+
+int delete_photo(photo_list *photos, uint32_t id){
+  photo *actual = NULL;
+  photo *previous = NULL;
+
+  if(photos->list!=NULL)
+    for(actual = photos->list; actual != NULL && actual->id != id; previous = actual, actual=actual->next);
+
+  if(actual!=NULL)
+    return 0;
+
+  previous->next = actual->next;
+  free(actual);
+
+  photos->total--;
+  return 1;
 
 }
 
 
-void print_keyword_list(keyword_list *list){
 
-  keyword *aux;
-  int i;
+void print_photo_list(photo_list *list){
 
-  printf("\t\t\tDEBUG: KEYWORD LIST:\n");
+  photo *aux;
+
+  printf("\t\tDEBUG: PHOTO LIST:\n");
   if(list->list!=NULL)
-    for(i=1, aux = list->list; aux != NULL; aux=aux->next, i++)
-      printf("\t\t\tDEBUG: KEYWORD %s\n", aux->key);
+    for(aux = list->list; aux != NULL; aux=aux->next){
+      printf("\t\tDEBUG: PHOTO ID: %d NAME: %s\n", aux->id, aux->name);
+      print_keyword_list(aux->keywords);
+    }
 }
 
-void free_keyword_list(keyword_list *list){
+
+
+void free_photo_list(photo_list *list){
 
   if(list->list!=NULL){
-    keyword *actual, *previous;
+
+    photo *actual, *previous;
     actual = list->list;
     while(actual!=NULL){
       previous = actual;
       actual = actual->next;
+      free_keyword_list(actual->keywords);
       free(previous);
     }
+
   }
+
   free(list);
 
 }
-*/
+
 
 
 

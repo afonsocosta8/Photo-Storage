@@ -35,10 +35,12 @@ uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
 
   fwrite(buffer,1,filesize,img);
 
-  
+
 
   return photo_id;
 }
+
+
 
 
 void * handle_client(void * arg){
