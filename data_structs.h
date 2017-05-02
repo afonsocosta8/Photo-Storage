@@ -47,6 +47,7 @@ typedef struct _photolist{
 }photo_list;
 
 
+// PEER LISTS
 
 peer_list *init_peer_list();
 
@@ -59,3 +60,23 @@ int get_peer(peer_list *list, char *ip, int *port);
 void remove_peer(peer_list *list, char *ip, int port);
 
 void free_peer_list(peer_list *list);
+
+
+
+// PHOTO LISTS
+
+photo_list *init_photo_list();
+
+void add_photo(photo_list *photos, char *name, uint32_t id);
+
+int add_keyword_photo(photo_list *photos, uint32_t id, char *keyword);
+
+int get_photo_name(photo_list *photos, uint32_t id, char *name);
+
+int delete_photo(photo_list *photos, uint32_t id);
+
+void print_photo_list(photo_list *list);
+
+void free_photo_list(photo_list *list);
+
+peer_list *init_peer_list();

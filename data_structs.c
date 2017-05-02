@@ -66,12 +66,16 @@ void print_keyword_list(keyword_list *list){
   printf("\t\tDEBUG: KEYWORD LIST:\n");
   if(list->list!=NULL)
     for(i=1, aux = list->list; aux != NULL; aux=aux->next, i++)
-      printf("\t\t\tDEBUG: KEYWORD %s\n", aux->key);
+      printf("\t\t\tDEBUG: KEYWORD %d: %s\n", i, aux->key);
 }
 
 void free_keyword_list(keyword_list *list){
 
+  printf("free_keywordlsit\n");
+
   if(list->list!=NULL){
+
+    printf("freeing keyword\n");
     keyword *actual, *previous;
     actual = list->list;
     while(actual!=NULL){
@@ -80,6 +84,8 @@ void free_keyword_list(keyword_list *list){
       free(previous);
     }
   }
+
+  printf("freeing keyword list\n");
   free(list);
 
 }
@@ -169,13 +175,24 @@ int delete_photo(photo_list *photos, uint32_t id){
   photo *actual = NULL;
   photo *previous = NULL;
 
-  if(photos->list!=NULL)
-    for(actual = photos->list; actual != NULL && actual->id != id; previous = actual, actual=actual->next);
-
-  if(actual!=NULL)
+  if(photos->list==NULL)
     return 0;
 
-  previous->next = actual->next;
+  if(photos->list->id == id){
+    actual = photos->list;
+    photos->list = actual->next;
+
+
+  }else{
+    for(actual = photos->list; actual != NULL && actual->id != id; previous = actual, actual=actual->next);
+
+    if(actual==NULL)
+      return 0;
+
+    previous->next = actual->next;
+  }
+
+  free_keyword_list(actual->keywords);
   free(actual);
 
   photos->total--;
@@ -205,10 +222,13 @@ void free_photo_list(photo_list *list){
 
     photo *actual, *previous;
     actual = list->list;
+
     while(actual!=NULL){
       previous = actual;
       actual = actual->next;
-      free_keyword_list(actual->keywords);
+      printf("freeing keywords\n");
+      free_keyword_list(previous->keywords);
+      printf("done freeing keywords\n");
       free(previous);
     }
 
@@ -221,9 +241,43 @@ void free_photo_list(photo_list *list){
 
 
 
+/*
+int main(){
+
+  photo_list * list = init_photo_list();
+  add_photo(list, "Primeira", 9283);
+  print_photo_list(list);
+
+  printf("FREEING\n");
+  int ret = delete_photo(list, 9283);
+  add_photo(list, "Segunda", 9284);
+  print_photo_list(list);
+  add_photo(list, "Terceira", 9285);
+  print_photo_list(list);
+
+  add_keyword_photo(list, 9285, "buefixe");
+  add_keyword_photo(list, 9285, "buelinda");
+  add_keyword_photo(list, 9285, "buenice");
+  print_photo_list(list);
+  ret = delete_photo(list, 9285);
+  printf("delete %d\n",ret);
+  ret = delete_photo(list, 213);
+  printf("delete %d\n",ret);
+  print_photo_list(list);
+  add_photo(list, "Quarta", 9286);
+  add_keyword_photo(list, 9286, "buefixe");
+  char name[100];
+  get_photo_name(list,9286,name);
+  printf("%s", name);
+  print_photo_list(list);
+  printf("PRINTING ret %d\n", ret);
+  print_photo_list(list);
 
 
 
+}
+
+*/
 
 
 
