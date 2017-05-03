@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include "data_str"
+#include "data_structs.h"
 
 
 void * handle_get(void * arg){
