@@ -26,6 +26,7 @@ int gallery_connect(char * host, in_port_t p){
   int sock_fd;
   struct timeval tv;
   tv.tv_sec = 2;
+  tv.tv_usec = 0;
 
 
 

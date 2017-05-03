@@ -7,15 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include "data_structs.h"
-
-
-typedef struct _args{
-
-  struct sockaddr_in client_addr;
-  peer_list * list;
-
-}args;
+#include "data_str"
 
 
 void * handle_get(void * arg){

@@ -115,6 +115,7 @@ void * handle_alive(void * arg){
   int sock_fd;
   struct timeval tv;
   tv.tv_sec = 1;
+  tv.tv_usec = 0;
 
   #ifdef DEBUG
     printf("\t\tDEBUG: HELLO IM A NEW THREAD...\n");
