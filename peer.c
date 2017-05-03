@@ -195,7 +195,7 @@ void * handle_alive(void * arg){
     exit(-1);
   }
   #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), server_addr.sin_port, query_buff);
+    printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port), query_buff);
   #endif
 
 
@@ -240,7 +240,7 @@ void * handle_alive(void * arg){
   while(1){
     nbytes = recvfrom(sock_fd, buff, 20, 0, (struct sockaddr *) & client_addr, &size_addr);
     #ifdef DEBUG
-      printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port,  buff);
+      printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),  buff);
     #endif
     if(strcmp(buff, "UALIVE?")!=0) {
       printf("UNEXPECTED MESSAGE\n");

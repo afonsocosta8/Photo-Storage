@@ -80,7 +80,7 @@ void * handle_get(void * arg){
       if(nbytes!=-1){
 
         #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port, test_peer_query);
+          printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), test_peer_query);
         #endif
 
         // WAITING FOR PEER RESPONSE. TIMEOUT = 1sec
@@ -92,7 +92,7 @@ void * handle_get(void * arg){
 
         #ifdef DEBUG
           printf("\t\tDEBUG: ENDED WAITING FOR PEER RESPONSE.\n");
-          printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), peer_addr.sin_port,  buff);
+          printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port),  buff);
         #endif
         if(nbytes>0){
 
@@ -101,7 +101,7 @@ void * handle_get(void * arg){
             printf("\t\tDEBUG: PEER  %s:%d IS ALIVE\n", ip, port);
           #endif
 
-          printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, ip, port);
+          printf("SERVING CLIENT %s:%d WITH PEER %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), ip, port);
           sprintf(resp_buff, "OK %s:%d", ip, port);
           DONE = 1;
 
@@ -144,7 +144,7 @@ void * handle_get(void * arg){
         printf("\t\tDEBUG: NO PEERS ON PEER LIST\n");
       #endif
 
-      printf("NO PEERS TO SERVE CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+      printf("NO PEERS TO SERVE CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
       sprintf(resp_buff, "ERROR NO PEERS");
       DONE = 1;
 
@@ -165,7 +165,7 @@ void * handle_get(void * arg){
   }else{
 
     #ifdef DEBUG
-      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
+      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
     #endif
 
   }
@@ -202,7 +202,7 @@ void * handle_reg(void * arg){
   sprintf(resp_buff, "OK");
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
   #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port, resp_buff);
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
   #endif
 
   free(arguments);
@@ -258,9 +258,9 @@ int main(){
     nbytes = recvfrom(sock_fd, buff, 100, 0, (struct sockaddr *) &client_addr, &size_addr);
 
 
-    printf("\n\nNEW CLIENT CONNECTED FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    printf("\n\nNEW CLIENT CONNECTED FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
     #ifdef DEBUG
-      printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), client_addr.sin_port,  buff);
+      printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),  buff);
     #endif
 
     if(strcmp(buff, "GET PEER")==0){
@@ -273,7 +273,7 @@ int main(){
       arguments->list = list;
 
       if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
-        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         exit(-1);
       }
 
@@ -291,7 +291,7 @@ int main(){
       arguments->list = list;
 
       if(pthread_create(&thr_id, NULL, handle_reg, arguments)!=0){
-        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         exit(-1);
       }
 

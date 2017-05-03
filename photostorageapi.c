@@ -82,7 +82,7 @@ int gallery_connect(char * host, in_port_t p){
   }
 
   #ifdef DEBUG
-    printf("\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), server_addr.sin_port, query_buff);
+    printf("\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port), query_buff);
   #endif
 
 
@@ -99,7 +99,7 @@ int gallery_connect(char * host, in_port_t p){
 
   // MESSAGE RECEIVED
   #ifdef DEBUG
-    printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), server_addr.sin_port,  buff);
+    printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port),  buff);
   #endif
 
   // NO PEERS CASE
