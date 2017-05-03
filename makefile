@@ -18,3 +18,5 @@ peer:
 	gcc -Wall -std=c99 -pthread peer.c -o peer
 peerdebug:
 	gcc -Wall -std=c99 -pthread -DDEBUG peer.c -o peer
+datastruct:
+	gcc -Wall -std=c99 data_structs.c -o datastructs

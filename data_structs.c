@@ -71,11 +71,9 @@ void print_keyword_list(keyword_list *list){
 
 void free_keyword_list(keyword_list *list){
 
-  printf("free_keywordlsit\n");
 
   if(list->list!=NULL){
 
-    printf("freeing keyword\n");
     keyword *actual, *previous;
     actual = list->list;
     while(actual!=NULL){
@@ -85,7 +83,6 @@ void free_keyword_list(keyword_list *list){
     }
   }
 
-  printf("freeing keyword list\n");
   free(list);
 
 }
@@ -226,9 +223,7 @@ void free_photo_list(photo_list *list){
     while(actual!=NULL){
       previous = actual;
       actual = actual->next;
-      printf("freeing keywords\n");
       free_keyword_list(previous->keywords);
-      printf("done freeing keywords\n");
       free(previous);
     }
 
