@@ -89,7 +89,7 @@ int gallery_connect(char * host, in_port_t p){
 
   // RECEIVE MESSAGE FROM GATEWAY
   nbytes = 0;
-  nbytes = recv(sock_fd, buff, 20, 0);
+  nbytes = recv(sock_fd, buff, 100, 0);
   if(nbytes <= 0){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT RECV MESSAGE FROM GATEWAY.\n");
