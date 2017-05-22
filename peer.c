@@ -76,7 +76,9 @@ void * handle_client(void * arg){
       printf("replying %d bytes\n", nbytes);
     }
 
-  }/*else if(strstr(client_query, "ADDKEY") != NULL) {
+  }
+
+  /*else if(strstr(client_query, "ADDKEY") != NULL) {
     char keyword[30];
     uint32_t photo_id;
     sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
@@ -100,6 +102,7 @@ void * handle_client(void * arg){
     sscanf(client_query, "%s %d", answer, photo_id);
     get_photo(client_fd, photo_id);
   }*/
+  return;
 }
 
 void * handle_alive(void * arg){
@@ -273,7 +276,7 @@ int main(int argc, char const *argv[]) {
 
   // DECODING INPUT ARGUMENTS
   if(argc!=7){
-      printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");
+      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port> <peer port>\n");
       exit(4);
   }else{ /*Reading each one of the arguments */
       for(i=1; i<argc; i=i+2) {

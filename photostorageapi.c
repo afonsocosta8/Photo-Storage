@@ -195,7 +195,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
-  sprintf(buff, "ADDPHOTO %s %d", file_name, filesize);
+  sprintf(buff, "ADDPHOTO %s %lf", file_name, filesize);
 
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");

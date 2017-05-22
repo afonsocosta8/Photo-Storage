@@ -16,6 +16,83 @@ typedef struct _args{
 
 }args;
 
+void * handle_ticket(){
+
+  struct sockaddr_in local_addr;
+  struct sockaddr_in client_addr;
+  socklen_t size_addr;
+  int sock_fd;
+  int nbytes;
+  int photo_id=0;
+
+  // CREATING SOCKET TO RECV MESSAGES
+  sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sock_fd == -1){
+    perror("ERROR CREATING TICKET  SOCKET\n");
+    exit(-1);
+  }
+  #ifdef DEBUG
+    printf("\tDEBUG: - TICKETS - SOCKET No: %d\n\tDEBUG: BINDING...\n", sock_fd);
+  #endif
+
+  // ASSIGNING SOCKET TO ADDRESS
+  local_addr.sin_family = AF_INET;
+	local_addr.sin_port= htons(9002);
+	local_addr.sin_addr.s_addr= INADDR_ANY;
+  if(bind(sock_fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) == -1){
+    perror("ERROR BINDIND TICKET SOCKET");
+    exit(-1);
+  }
+  printf("READY TO RECEIVE MESSAGES TICKETS\n");
+
+
+  char recvd_message[100];
+  char resp_buff[100];
+
+  while(1){
+    nbytes = recvfrom(sock_fd, recvd_message, 100, 0, (struct sockaddr *) &client_addr, &size_addr);
+
+    printf("\n\nNEW CLIENT ON TICKET THREAD FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    #ifdef DEBUG
+      printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),  recvd_message);
+    #endif
+
+    if(nbytes>0){
+
+      // PEER IS ALIVE. PREPARING RESPONSE TO CLIENT
+      if(strcmp(recvd_message, "GET PHOTOID")==0){
+
+        #ifdef DEBUG
+          printf("\tDEBUG: DECODED AS GET PHOTOID\n");
+        #endif
+
+        printf("SERVING CLIENT %s:%d WITH PHOTO ID %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), photo_id);
+        sprintf(resp_buff, "OK %d", photo_id);
+        nbytes = sendto(sock_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+        photo_id++;
+        if(nbytes>0){
+
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
+          #endif
+
+          // WAITING FOR PEER RESPONSE. TIMEOUT = 1sec
+          #ifdef DEBUG
+            printf("\t\tDEBUG: WAITING FOR PEER RESPONSE.\n");
+          #endif
+        }
+      }
+    }else{
+
+      #ifdef DEBUG
+        printf("\tDEBUG: DECODED AS GET PHOTOID\n");
+      #endif
+
+      printf("COULD NOT SERVE CLIENT %s:%d WITH PHOTO ID %d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), photo_id);
+
+    }
+  }
+}
 
 void * handle_get(void * arg){
 
@@ -253,6 +330,12 @@ int main(){
   }
   printf("READY TO RECEIVE MESSAGES\n");
 
+  // GETTING TICKET SERVER
+  if(pthread_create(&thr_id, NULL, handle_ticket, NULL)!=0){
+    printf("ERROR CREATING THREAD FOR TICKER SERVER\n");
+    exit(-1);
+  }
+
 
   while(1){
     nbytes = recvfrom(sock_fd, buff, 100, 0, (struct sockaddr *) &client_addr, &size_addr);
@@ -263,43 +346,48 @@ int main(){
       printf("\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),  buff);
     #endif
 
-    if(strcmp(buff, "GET PEER")==0){
-      #ifdef DEBUG
-        printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
-      #endif
+    if(nbytes>0){
+      if(strcmp(buff, "GET PEER")==0){
+        #ifdef DEBUG
+          printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
+        #endif
 
-      args *arguments= (args*)malloc(sizeof(args));
-      arguments->client_addr = client_addr;
-      arguments->list = list;
+        args *arguments= (args*)malloc(sizeof(args));
+        arguments->client_addr = client_addr;
+        arguments->list = list;
 
-      if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
-        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-        exit(-1);
+        if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
+          printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+          exit(-1);
+        }
+
+        #ifdef DEBUG
+          printf("\tDEBUG: THREAD CREATED\n");
+        #endif
+
+      }else if(strcmp(buff, "REG PEER")==0){
+        #ifdef DEBUG
+          printf("\tDEBUG: DECODED AS REG PEER\n");
+        #endif
+
+        args *arguments= (args*)malloc(sizeof(args));
+        arguments->client_addr = client_addr;
+        arguments->list = list;
+
+        if(pthread_create(&thr_id, NULL, handle_reg, arguments)!=0){
+          printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+          exit(-1);
+        }
+
+      }else{
+        #ifdef DEBUG
+          printf("\tDEBUG: RECV INVALID COMMAND\n");
+        #endif
+
       }
-
-      #ifdef DEBUG
-        printf("\tDEBUG: THREAD CREATED\n");
-      #endif
-
-    }else if(strcmp(buff, "REG PEER")==0){
-      #ifdef DEBUG
-        printf("\tDEBUG: DECODED AS REG PEER\n");
-      #endif
-
-      args *arguments= (args*)malloc(sizeof(args));
-      arguments->client_addr = client_addr;
-      arguments->list = list;
-
-      if(pthread_create(&thr_id, NULL, handle_reg, arguments)!=0){
-        printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-        exit(-1);
-      }
-
     }else{
-      #ifdef DEBUG
-        printf("\tDEBUG: RECV INVALID COMMAND\n");
-      #endif
-
+      printf("Closing gateway.\n");
+      exit(-1);
     }
   }
 
