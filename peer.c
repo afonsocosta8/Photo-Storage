@@ -41,7 +41,84 @@ uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
 }
 
 
+uint32_t get_photoid(char * host){
 
+  int sock_fd;
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 500000;
+  int nbytes;
+
+  printf("CONTACTING GATEWAY TO GET A NEW PHOTO ID\n");
+
+  sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sock_fd == -1){
+    perror("ERROR CREATING SOCKET\n");
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT CREATE SOCKET TO RETRIEVE PHOTOID\n");
+    #endif
+    return -1;
+  }
+
+  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
+    perror("ERROR SETTING SOCKET OPTS\n");
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SET SOCKET OPTS FOR PHOTOID\n");
+    #endif
+    return -1;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: CREATED SOCKET %d TO RETRIVE A NEW PHOTOID\n", sock_fd);
+  #endif
+
+
+  char get_photoid_query[12];
+  struct sockaddr_in gateway_addr;
+  strcpy(get_photoid_query, "GET PHOTOID");
+  gateway_addr.sin_family = AF_INET;
+	gateway_addr.sin_port = htons(9002);
+  inet_aton(host, &gateway_addr.sin_addr);
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING PHOTOID QUERY TO GATEWAY\n");
+  #endif
+
+  nbytes = sendto(sock_fd, get_photoid_query, strlen(get_photoid_query)+1, 0, (const struct sockaddr *) &gateway_addr, sizeof(gateway_addr));
+  if(nbytes==-1){
+    #ifdef DEBUG
+      printf("\t\tDEBUG: GATEWAY UNAVAILABLE WHEN RETRIE A NEW PHOTOID\n");
+    #endif
+    return -1;
+  }
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gateway_addr.sin_addr), ntohs(gateway_addr.sin_port), get_photoid_query);
+  #endif
+
+
+
+
+  // RECEIVING MESSAGE FROM GATEWAY
+  char get_gw_resp[25];
+  nbytes = 0;
+  nbytes = recv(sock_fd, get_gw_resp, 9, 0);
+  if(nbytes<=0) {
+    printf("GATEWAY DID NOT ANSWER\n");
+    return -1;
+  }
+  #ifdef DEBUG
+    printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  get_gw_resp);
+  #endif
+  char gw_code[10];
+  uint32_t photoid;
+  sscanf(get_gw_resp, "%s %d", gw_code, &photoid);
+
+
+  return photoid;
+
+
+
+}
 
 void * handle_client(void * arg){
 
@@ -465,16 +542,17 @@ int main(int argc, char const *argv[]) {
     #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
     printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-
+    /*
     if(pthread_create(&thr_id, NULL, handle_client, &client_fd)!=0){
       printf("ERROR CREATING THREAD FOR CLIENT\n");
       exit(-1);
     }
-
+*/
     #ifdef DEBUG
       printf("\tDEBUG: CREATED THREAD FOR CLIENT\n");
     #endif
 
+    printf("PHOTO ID: %d\n", get_photoid(host));
     // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY
 
 

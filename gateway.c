@@ -23,7 +23,7 @@ void * handle_ticket(){
   socklen_t size_addr;
   int sock_fd;
   int nbytes;
-  int photo_id=0;
+  uint32_t photo_id=0;
 
   // CREATING SOCKET TO RECV MESSAGES
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
