@@ -43,8 +43,19 @@ typedef struct _photolist{
 
   photo *list;
   int total;
+  pthread_mutex_t lock;
 
 }photo_list;
+
+
+typedef struct _photohashtable{
+
+  photo_list **table;
+  int total;
+  int size;
+
+
+}photo_hash_table;
 
 
 // PEER LISTS
@@ -61,22 +72,21 @@ void remove_peer(peer_list *list, char *ip, int port);
 
 void free_peer_list(peer_list *list);
 
+peer_list *init_peer_list();
 
 
 // PHOTO LISTS
 
-photo_list *init_photo_list();
+photo_hash_table * create_hash_table(int size);
 
-void add_photo(photo_list *photos, char *name, uint32_t id);
+void free_hash_table(photo_hash_table *table);
 
-int add_keyword_photo(photo_list *photos, uint32_t id, char *keyword);
+void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id);
 
-int get_photo_name(photo_list *photos, uint32_t id, char *name);
+int delete_photo_hash(photo_hash_table *table, uint32_t id);
 
-int delete_photo(photo_list *photos, uint32_t id);
+int add_keyword_photo_hash(photo_hash_table *table, uint32_t id, char *keyword);
 
-void print_photo_list(photo_list *list);
+int get_photo_name_hash(photo_hash_table *table, uint32_t id, char *name);
 
-void free_photo_list(photo_list *list);
-
-peer_list *init_peer_list();
+void print_photo_hash(photo_hash_table *table);

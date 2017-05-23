@@ -199,11 +199,11 @@ int delete_photo(photo_list *photos, uint32_t id){
 
 
 
+
 void print_photo_list(photo_list *list){
 
   photo *aux;
 
-  printf("\t\tDEBUG: PHOTO LIST:\n");
   if(list->list!=NULL)
     for(aux = list->list; aux != NULL; aux=aux->next){
       printf("\t\tDEBUG: PHOTO ID: %d NAME: %s\n", aux->id, aux->name);
@@ -233,48 +233,110 @@ void free_photo_list(photo_list *list){
 
 }
 
+int get_hash_key(photo_hash_table *table, int id){
 
+  return id % table->size;
+
+}
+
+photo_hash_table * create_hash_table(int size){
+
+  photo_hash_table* new = malloc(sizeof(photo_hash_table));
+
+  new->total = 0;
+  new->size = size;
+  new->table = malloc(sizeof(photo_list)*size);
+  for(int i=0; i<size; i++)
+    new->table[i] = init_photo_list();
+
+  return new;
+
+}
+
+void free_hash_table(photo_hash_table *table){
+
+  for(int i=0; i<table->size; i++)
+    free_photo_list(table->table[i]);
+
+  free(table->table);
+  free(table);
+
+}
+
+
+void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id){
+
+  add_photo(table->table[get_hash_key(table, id)], name, id);
+
+}
+
+int delete_photo_hash(photo_hash_table *table, uint32_t id){
+
+  return delete_photo(table->table[get_hash_key(table, id)], id);
+
+}
+
+
+int add_keyword_photo_hash(photo_hash_table *table, uint32_t id, char *keyword){
+
+  return add_keyword_photo(table->table[get_hash_key(table, id)], id, keyword);
+
+}
+
+int get_photo_name_hash(photo_hash_table *table, uint32_t id, char *name){
+
+  return get_photo_name(table->table[get_hash_key(table, id)], id, name);
+
+}
+
+void print_photo_hash(photo_hash_table *table){
+
+  printf("\t\tDEBUG: PHOTO LIST:\n");
+  for(int i=0; i<table->size; i++)
+    print_photo_list(table->table[i]);
+
+}
 
 
 /*
+
 int main(){
 
-  photo_list * list = init_photo_list();
-  add_photo(list, "Primeira", 9283);
-  print_photo_list(list);
+  photo_hash_table * table = create_hash_table(769);
+  add_photo_hash_table(table, "Primeira", 9283);
+  print_photo_hash(table);
 
   printf("FREEING\n");
-  int ret = delete_photo(list, 9283);
-  add_photo(list, "Segunda", 9284);
-  print_photo_list(list);
-  add_photo(list, "Terceira", 9285);
-  print_photo_list(list);
+  int ret = delete_photo_hash(table, 9283);
+  add_photo_hash_table(table, "Segunda", 9284);
+  print_photo_hash(table);
+  add_photo_hash_table(table, "Terceira", 9285);
+  print_photo_hash(table);
 
-  add_keyword_photo(list, 9285, "buefixe");
-  add_keyword_photo(list, 9285, "buelinda");
-  add_keyword_photo(list, 9285, "buenice");
-  print_photo_list(list);
-  ret = delete_photo(list, 9285);
+  add_keyword_photo_hash(table, 9285, "buefixe");
+  add_keyword_photo_hash(table, 9285, "buelinda");
+  add_keyword_photo_hash(table, 9285, "buenice");
+  print_photo_hash(table);
+  ret = delete_photo_hash(table, 9285);
   printf("delete %d\n",ret);
-  ret = delete_photo(list, 213);
+  ret = delete_photo_hash(table, 213);
   printf("delete %d\n",ret);
-  print_photo_list(list);
-  add_photo(list, "Quarta", 9286);
-  add_keyword_photo(list, 9286, "buefixe");
+  print_photo_hash(table);
+  add_photo_hash_table(table, "Quarta", 9286);
+  add_keyword_photo_hash(table, 9286, "buefixe");
   char name[100];
-  get_photo_name(list,9286,name);
+  get_photo_name_hash(table,9286,name);
   printf("%s", name);
-  print_photo_list(list);
+  print_photo_hash(table);
   printf("PRINTING ret %d\n", ret);
-  print_photo_list(list);
+  print_photo_hash(table);
 
 
 
 }
 
+
 */
-
-
 
 
 
