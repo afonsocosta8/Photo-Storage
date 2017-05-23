@@ -237,6 +237,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     close(peer_socket);
     return 0;
   }
+  
   // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
   fread(buffer, sizeof *buffer, filesize, img);
