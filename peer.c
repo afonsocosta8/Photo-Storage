@@ -28,9 +28,11 @@ typedef struct _header{
 
 uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
   unsigned char *buffer = malloc(filesize);
-  FILE *img = fopen(photo_name, "wb");
+  char towrite[100];
+  towrite = sprintf(towrite, "testimgend/%s", photo_name_name);
+  FILE *img = fopen(towrite, "wb");
   int nbytes;
-  uint32_t photo_id;
+  uint32_t photo_id=3;
 
   nbytes = recv(client_fd, buffer, filesize, 0);
 
