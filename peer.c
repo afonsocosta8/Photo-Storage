@@ -29,16 +29,28 @@ typedef struct _header{
 uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
   unsigned char *buffer = malloc(filesize);
   char towrite[100];
+  uint32_t photo_id=3;
+  printf("nome %s\n", photo_name);
   sprintf(towrite, "testimgend/%s", photo_name);
   FILE *img = fopen(towrite, "wb");
   int nbytes;
-  uint32_t photo_id=3;
+  printf("size = %lu\n", filesize);
+
 
   nbytes = recv(client_fd, buffer, filesize, 0);
 
+  printf("received\n");
+  int i;
+  for(i=0;i<1000;i++){
+    printf("%u ", buffer[i]);
+  }
+  printf("\n");
+  printf("printed\n");
+
   fwrite(buffer,1,filesize,img);
 
-
+  //printf("wrote\n");
+  fclose(img);
 
   return photo_id;
 }
@@ -545,17 +557,16 @@ int main(int argc, char const *argv[]) {
     #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
     printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-    /*
+
     if(pthread_create(&thr_id, NULL, handle_client, &client_fd)!=0){
       printf("ERROR CREATING THREAD FOR CLIENT\n");
       exit(-1);
     }
-*/
+
     #ifdef DEBUG
       printf("\tDEBUG: CREATED THREAD FOR CLIENT\n");
     #endif
 
-    printf("PHOTO ID: %d\n", get_photoid(host));
     // NOW WE NEED TO ASSIGN THAT CLIENT TO A THREAD AND WAIT FOR HIS QUERY
 
 
