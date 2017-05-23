@@ -14,6 +14,14 @@ typedef struct _peerlist{
 
 }peer_list;
 
+typedef struct _brotherlist{
+
+  peer *last;
+  peer *first;
+
+}brother_list;
+
+
 
 typedef struct _keyword{
 
@@ -74,21 +82,22 @@ void free_peer_list(peer_list *list);
 
 peer_list *init_peer_list();
 
+
 // PEER LISTS FOR PEERS
 
-peer_list *init_peer_list();
+brother_list *init_brother_list();
 
-void add_peer_list(peer_list *list, char *ip, int port);
+void add_brother_list(brother_list *list, char *ip, int port);
 
-void print_peer_list(peer_list *list);
+void print_brother_list(brother_list *list);
 
-int get_peer(peer_list *list, char *ip, int *port);
+int get_brother(brother_list *list, char *ip, int *port);
 
-void remove_peer(peer_list *list, char *ip, int port);
+void remove_brother(brother_list *list, char *ip, int port);
 
-void free_peer_list(peer_list *list);
+void free_brother_list(brother_list *list);
 
-peer_list *init_peer_list();
+brother_list *init_brother_list();
 
 
 // PHOTO LISTS

@@ -331,7 +331,7 @@ int main(){
   printf("PRINTING ret %d\n", ret);
   print_photo_hash(table);
   free_hash_table(table);
-  
+
 }
 
 */
@@ -458,3 +458,50 @@ void free_peer_list(peer_list *list){
   free(list);
 
 }
+
+
+
+// BROTHER LIST
+/*
+
+brother_list *init_brother_list(){
+
+  brother_list *list = (brother_list*)malloc(sizeof(brother_list));
+
+  list->first = NULL;
+  list->last = NULL;
+
+  return list;
+
+}
+
+void add_brother_list(brother_list *list, char *ip, int port){
+
+  peer *new = (peer*)malloc(sizeof(peer));
+
+  strcpy(new->ip, ip);
+  new->port = port;
+  new->next = NULL;
+
+  if(list->first == NULL){
+
+    list->first = new;
+    list->last = new;
+
+  }else{
+    list->last->next=new;
+    list->last = new;
+
+  }
+}
+
+void print_brother_list(peer_list *list){
+
+  peer *aux;
+  int i;
+
+  if(list->first!=NULL)
+    for(aux = list->first; aux != NULL; aux=aux->next)
+      printf("\t\t\tDEBUG: PEER %d - %s:%d\n", i, aux->ip, aux->port);
+}
+*/
