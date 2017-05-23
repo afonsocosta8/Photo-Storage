@@ -41,8 +41,10 @@ int main(int argc, char const *argv[]) {
       }
   }
   p=atoi(port);
+  printf("connecting to peer\n");
   psock = gallery_connect(host, p);
+  printf("connected to peer\n");
   if(psock>0)
-  //  gallery_add_photo(psock, "testimg/ist.jpg");
+  gallery_add_photo(psock, "testimg/ist.jpg");
   return 0;
 }

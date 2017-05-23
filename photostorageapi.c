@@ -194,7 +194,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
-  sprintf(buff, "ADDPHOTO %s %lf", file_name, filesize);
+  sprintf(buff, "ADDPHOTO %s %zu", file_name, filesize);
 
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
@@ -236,7 +236,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     close(peer_socket);
     return 0;
   }
-  
+
   // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
   fread(buffer, sizeof *buffer, filesize, img);

@@ -29,7 +29,7 @@ typedef struct _header{
 uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
   unsigned char *buffer = malloc(filesize);
   char towrite[100];
-  towrite = sprintf(towrite, "testimgend/%s", photo_name_name);
+  sprintf(towrite, "testimgend/%s", photo_name);
   FILE *img = fopen(towrite, "wb");
   int nbytes;
   uint32_t photo_id=3;
