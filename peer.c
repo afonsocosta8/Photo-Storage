@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #define CHUNK_SIZE 512
 

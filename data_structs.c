@@ -330,28 +330,11 @@ int main(){
   print_photo_hash(table);
   printf("PRINTING ret %d\n", ret);
   print_photo_hash(table);
-
-
-
+  free_hash_table(table);
+  
 }
 
-
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // GATEWAY
 

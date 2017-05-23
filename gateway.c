@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <time.h>
+#include <sys/time.h>
 #include "data_structs.h"
 
 typedef struct _args{
@@ -34,6 +34,7 @@ void * handle_ticket(){
   #ifdef DEBUG
     printf("\tDEBUG: - TICKETS - SOCKET No: %d\n\tDEBUG: BINDING...\n", sock_fd);
   #endif
+
 
   // ASSIGNING SOCKET TO ADDRESS
   local_addr.sin_family = AF_INET;

@@ -58,7 +58,23 @@ typedef struct _photohashtable{
 }photo_hash_table;
 
 
-// PEER LISTS
+// PEER LISTS FOR GATEWAY
+
+peer_list *init_peer_list();
+
+void add_peer_list(peer_list *list, char *ip, int port);
+
+void print_peer_list(peer_list *list);
+
+int get_peer(peer_list *list, char *ip, int *port);
+
+void remove_peer(peer_list *list, char *ip, int port);
+
+void free_peer_list(peer_list *list);
+
+peer_list *init_peer_list();
+
+// PEER LISTS FOR PEERS
 
 peer_list *init_peer_list();
 
