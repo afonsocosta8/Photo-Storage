@@ -282,17 +282,25 @@ void * handle_reg(void * arg){
       printf("\t\t\t%s\n", existing_peers[i]);
   #endif
 
-  resp_buff = (char*)malloc(sizeof(char)*(22*total_peers)+3);
-  sprintf(resp_buff, "OK");
+  char resp_numpeers[20];
+  resp_buff = (char*)malloc(sizeof(char)*(22*total_peers)+1);
+
+  sprintf(resp_numpeers, "OK %d", total_peers);
+
   for(int i=0; i<total_peers; i++){
-    sprintf(resp_buff+strlen(resp_buff), " %s", existing_peers[i]);
+    sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
     free(existing_peers[i]);
   }
 
+  nbytes = sendto(resp_fd, resp_numpeers, strlen(resp_numpeers)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_numpeers);
+  #endif
   nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
   #endif
+
 
 
   // ADDING PEER TO LIST
