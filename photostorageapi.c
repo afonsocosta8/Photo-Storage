@@ -641,6 +641,10 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   char query_buff[100], buff[100];
   int nbytes;
+  unsigned long filesize;
+  char answer[10];
+  char photo_name[100];
+
 
   // PREPARING PROTOCOL MESSAGE TO PEER
   sprintf(query_buff, "GETPHOTO %d", id_photo);
@@ -693,6 +697,17 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   }
 
+
+  sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
+
+  FILE *img = fopen(photo_name, "wb");
+  unsigned char *buffer = malloc(filesize);
+
+  nbytes = recv(peer_socket, buffer, filesize, 0);
+
+  fwrite(buffer,1,filesize,img);
+
+  fclose(img);
 
   close(peer_socket);
   return -1;
