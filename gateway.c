@@ -415,10 +415,8 @@ void inform_add_peers(peer_list *list, char *ip, int port){
 void add_peer(peer_list *list, char * ip, int port){
 
   // INFORMING OTHER PEERS TO ADD THAT PEER
-  args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
-  strcpy(args->ip, ip);
-  args->port = port;
-  args->list = list;
+  char backup_ip[20];
+  strcpy(backup_ip, ip);
 
   if(list->total>0){
     #ifdef DEBUG
@@ -427,8 +425,10 @@ void add_peer(peer_list *list, char * ip, int port){
 
     inform_add_peers(list, ip, port);
   }
-
-  add_peer_list(list, ip, port);
+  #ifdef DEBUG
+    printf("\t\tDEBUG: ADDING TO DATASTRUCT PEER %s:%d\n", ip, port);
+  #endif
+  add_peer_list(list, backup_ip, port);
 
 
 }
