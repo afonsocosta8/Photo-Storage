@@ -391,7 +391,7 @@ void * handle_alive(void * arg){
     printf("\t\tDEBUG: BINDING SOCKET\n");
   #endif
 	local_addr.sin_family = AF_INET;
-	local_addr.sin_port= (mp);
+	local_addr.sin_port= htons(mp);
 	local_addr.sin_addr.s_addr= INADDR_ANY;
 	int err = bind(sock_fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
 	if(err == -1) {

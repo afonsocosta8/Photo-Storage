@@ -264,11 +264,11 @@ int get_hash_key(photo_hash_table *table, int id){
 photo_hash_table * create_hash_table(int size){
 
   photo_hash_table* new = malloc(sizeof(photo_hash_table));
-
+  int i;
   new->total = 0;
   new->size = size;
   new->table = malloc(sizeof(photo_list)*size);
-  for(int i=0; i<size; i++)
+  for(i=0; i<size; i++)
     new->table[i] = init_photo_list();
 
   return new;
@@ -276,8 +276,8 @@ photo_hash_table * create_hash_table(int size){
 }
 
 void free_hash_table(photo_hash_table *table){
-
-  for(int i=0; i<table->size; i++)
+  int i;
+  for(i=0; i<table->size; i++)
     free_photo_list(table->table[i]);
 
   free(table->table);
@@ -313,8 +313,9 @@ int get_photo_name_hash(photo_hash_table *table, uint32_t id, char *name){
 
 void print_photo_hash(photo_hash_table *table){
 
+  int i;
   printf("\t\tDEBUG: PHOTO LIST:\n");
-  for(int i=0; i<table->size; i++)
+  for(i=0; i<table->size; i++)
     print_photo_list(table->table[i]);
 
 }
@@ -484,7 +485,7 @@ void remove_peer(peer_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
   if(list->beginning!=NULL){
-    for(actual = list->beginning; !(strcmp(ip, actual->ip)==0 && port==actual->port) && actual != NULL;  previous = actual, actual=actual->next);
+    for(actual = list->beginning; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
 
     if(actual != NULL){
 
@@ -607,9 +608,9 @@ void remove_brother(brother_list *list, char *ip, int port){
     #ifdef DEBUG
       printf("\t\t\t\tDEBUG: SEARCHING FOR BROTHER\n");
     #endif
-    for(actual = list->first; !(strcmp(ip, actual->ip)==0 && port==actual->port) && actual != NULL;  previous = actual, actual=actual->next);
+    for(actual = list->first; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
 
-    if(actal != NULL){
+    if(actual != NULL){
       // first case: we want to remove the node that is the first of the list
       if(actual == list->first){
         #ifdef DEBUG

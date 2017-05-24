@@ -41,11 +41,11 @@ void * inform_remove_peers(void * input){
   char buff[100];
   char peer_ip[20];
   int peer_port;
-
+  int i;
   int total;
   char ** peers = get_all_peers(list, &total);
 
-  for(int i = 0; i<total; i++){
+  for(i = 0; i<total; i++){
 
     sscanf(peers[i], "%s %d", peer_ip, &peer_port);
     #ifdef DEBUG
@@ -67,7 +67,7 @@ void * inform_remove_peers(void * input){
       printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
     #endif
     peer_addr.sin_family = AF_INET;
-    peer_addr.sin_port = peer_port;
+    peer_addr.sin_port = htons(peer_port);
     inet_aton(peer_ip, &peer_addr.sin_addr);
     sprintf(buff, "RMV %s %d", ip, port);
 
@@ -246,7 +246,7 @@ void * handle_get(void * arg){
       }
       strcpy(test_peer_query, "UALIVE?");
       peer_addr.sin_family = AF_INET;
-    	peer_addr.sin_port = port;
+    	peer_addr.sin_port = htons(port);
     	inet_aton(ip, &peer_addr.sin_addr);
 
       // SENDING UALIVE? TO PEER
@@ -362,11 +362,11 @@ void inform_add_peers(peer_list *list, char *ip, int port){
   char buff[100];
   char peer_ip[20];
   int peer_port;
-
+  int i;
   int total;
   char ** peers = get_all_peers(list, &total);
 
-  for(int i = 0; i<total; i++){
+  for(i = 0; i<total; i++){
 
     sscanf(peers[i], "%s %d", peer_ip, &peer_port);
     #ifdef DEBUG
@@ -388,7 +388,7 @@ void inform_add_peers(peer_list *list, char *ip, int port){
       printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
     #endif
     peer_addr.sin_family = AF_INET;
-    peer_addr.sin_port = peer_port;
+    peer_addr.sin_port = htons(peer_port);
     inet_aton(peer_ip, &peer_addr.sin_addr);
     sprintf(buff, "ADD %s %d", ip, port);
 
@@ -440,6 +440,8 @@ void * handle_reg(void * arg){
   char ** existing_peers;
   int nbytes;
 
+  int i;
+
   // GET ARGUMENTS
   args *arguments = (args*)arg;
   struct sockaddr_in client_addr = arguments->client_addr;
@@ -459,7 +461,7 @@ void * handle_reg(void * arg){
 
   #ifdef DEBUG
     printf("\t\tDEBUG: EXISTING PEERS:\n");
-    for(int i = 0; i<total_peers; i++)
+    for(i = 0; i<total_peers; i++)
       printf("\t\t\t%s\n", existing_peers[i]);
   #endif
 
@@ -473,7 +475,7 @@ void * handle_reg(void * arg){
   #endif
 
   if(total_peers!=0){
-    for(int i=0; i<total_peers; i++){
+    for(i=0; i<total_peers; i++){
       sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
       free(existing_peers[i]);
     }
@@ -488,10 +490,10 @@ void * handle_reg(void * arg){
 
   // ADDING PEER TO LIST
   #ifdef DEBUG
-    printf("\t\tDEBUG: ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    printf("\t\tDEBUG: ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
   #endif
-  printf("ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-  add_peer(list, inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+  printf("ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+  add_peer(list, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
   #ifdef DEBUG
     printf("\t\tDEBUG: REGISTERING PEER OK\n");
     print_peer_list(list);
