@@ -12,20 +12,23 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+#include "data_structs.h"
+
 #define CHUNK_SIZE 512
 
-typedef struct _args{
+typedef struct _args_regpeer{
 
   int mp;
   int p;
   char h[20];
+  brother_list *list;
 
-}args;
+}args_regpeer;
 
 typedef struct _header{
   long	data_length;
 } header;
-
+/*
 uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
   unsigned char *buffer = malloc(filesize);
   char towrite[100];
@@ -54,7 +57,7 @@ uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
 
   return photo_id;
 }
-
+*/
 
 uint32_t get_photoid(char * host){
 
@@ -136,7 +139,7 @@ uint32_t get_photoid(char * host){
 }
 
 void * handle_client(void * arg){
-
+/*
   int client_fd = *(int*)arg;
   int nbytes;
   char client_query[100];
@@ -169,7 +172,7 @@ void * handle_client(void * arg){
     }
 
   }
-
+*/
   /*else if(strstr(client_query, "ADDKEY") != NULL) {
     char keyword[30];
     uint32_t photo_id;
@@ -207,6 +210,7 @@ void * handle_alive(void * arg){
 	int nbytes;
   char host[20];
   int p,mp;
+  brother_list * list;
   int sock_fd;
   struct timeval tv;
   tv.tv_sec = 1;
@@ -219,10 +223,11 @@ void * handle_alive(void * arg){
 
 
   // GET ARGUMENTS
-  args *arguments = (args*)arg;
+  args_regpeer *arguments = (args_regpeer*)arg;
   strcpy(host, arguments->h);
   p = arguments->p;
   mp = arguments->mp;
+  list = arguments->list;
   free(arguments);
 
 
@@ -298,6 +303,8 @@ void * handle_alive(void * arg){
 
   // RECEIVING MESSAGE FROM GATEWAY
   char get_gw_resp[25];
+  char resp_code[4];
+  int num_peers;
   nbytes = 0;
   nbytes = recv(sock_fd, get_gw_resp, 9, 0);
   if(nbytes<=0) {
@@ -307,12 +314,42 @@ void * handle_alive(void * arg){
   #ifdef DEBUG
     printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  get_gw_resp);
   #endif
-  sscanf(get_gw_resp, "%s %d", resp_code, num_peers);
+  sscanf(get_gw_resp, "%s %d", resp_code, &num_peers);
   if(strcmp(resp_code, "OK")!=0) {
     printf("ERROR ON RECEIVING FROM GATEWAY\n");
     exit(-1);
   }else{
-    printf("THERE ARE %d ACTIVE PEERS\n");
+    printf("THERE ARE %d ACTIVE PEERS\n", num_peers);
+    if(num_peers!=0){
+      char * active_peers = (char*)malloc((sizeof(char)*22*num_peers)+1);
+      nbytes = 0;
+      nbytes = recv(sock_fd, active_peers, 22*num_peers+1 , 0);
+      if(nbytes<=0) {
+        printf("GATEWAY DID NOT ANSWER\n");
+        exit(-1);
+      }
+      #ifdef DEBUG
+        printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  active_peers);
+      #endif
+      char *brother_ip;
+      int brother_port;
+      #ifdef DEBUG
+        printf("\t\tADDING BROTHER PEERS TO DATASTRUCT\n");
+      #endif
+      brother_ip = strtok(active_peers," ");
+      printf("\t\t%s\n", brother_ip);
+
+      while (brother_ip != NULL) {
+        brother_port = atoi(strtok (NULL," "));
+        add_brother_list(list, brother_ip, brother_port);
+        printf("\t\t ADDING %s:%d TO BROTHERS LIST\n", brother_ip, brother_port);
+        brother_ip = strtok(NULL," ");
+      }
+      #ifdef DEBUG
+        printf("\t\tBROTHERS LIST:\n");
+        print_brother_list(list);
+      #endif
+    }
   }
 
 
@@ -368,6 +405,10 @@ int main(int argc, char const *argv[]) {
   struct timeval tv;
   tv.tv_sec       = 1;
   tv.tv_usec      = 500000;
+
+  photo_hash_table * photos =  create_hash_table(769);
+  brother_list * brothers = init_brother_list();
+
 
   // DECODING INPUT ARGUMENTS
   if(argc!=7){
@@ -492,9 +533,10 @@ int main(int argc, char const *argv[]) {
     printf("\tDEBUG: CREATING THREAD TO HANDLE REG TO GW AND UALIVE QUERYS\n");
   #endif
 
-  args *arguments = (args*)malloc(sizeof(args));
+  args_regpeer *arguments = (args_regpeer*)malloc(sizeof(args_regpeer));
   arguments->mp = mp;
   arguments->p = p;
+  arguments->list = brothers;
   strcpy(arguments->h, host);
   if(pthread_create(&thr_id, NULL, handle_alive, arguments)!=0){
     printf("ERROR CREATING THREAD FOR CLIENT\n");

@@ -16,6 +16,49 @@ typedef struct _args{
 
 }args;
 
+
+typedef struct _args_remv_peer{
+
+  char ip[20];
+  int port;
+  peer_list * list;
+
+}args_remv_peer;
+
+void * inform_remove_peers(void * args_remv_peer){
+  pthread_t thr_id;
+
+
+
+}
+
+
+void remove_peer_list(peer_list *list,char* ip, int port){
+
+  // REMOVING PEER FROM PEER LIST
+  remove_peer(list, ip, port);
+
+  // INFORMING OTHER PEERS TO REMOVE THAT PEER
+  args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
+  strcpy(args->ip, ip);
+  args->port = port;
+  args->list = list;
+
+  if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
+    printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    exit(-1);
+  }
+
+
+
+
+
+
+
+
+
+}
+
 void * handle_ticket(){
 
   struct sockaddr_in local_addr;
@@ -190,7 +233,8 @@ void * handle_get(void * arg){
           #endif
 
           // PEER NOT ALIVE... NEED TO RETRIEVE ANOTHER PEER FROM PEER LIST AND REMV THIS ONE
-          remove_peer(list, ip, port);
+          remove_peer_list(list, ip, port);
+
           print_peer_list(list);
 
           #ifdef DEBUG
@@ -206,7 +250,7 @@ void * handle_get(void * arg){
         #endif
 
         // PEER NOT ALIVE... NEED TO RETRIEVE ANOTHER PEER FROM PEER LIST AND REMV THIS ONE
-        remove_peer(list, ip, port);
+        remove_peer_list(list, ip, port);
         print_peer_list(list);
 
         #ifdef DEBUG
@@ -286,21 +330,22 @@ void * handle_reg(void * arg){
   resp_buff = (char*)malloc(sizeof(char)*(22*total_peers)+1);
 
   sprintf(resp_numpeers, "OK %d", total_peers);
-
-  for(int i=0; i<total_peers; i++){
-    sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
-    free(existing_peers[i]);
-  }
-
   nbytes = sendto(resp_fd, resp_numpeers, strlen(resp_numpeers)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_numpeers);
   #endif
-  
-  nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
-  #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
-  #endif
+
+  if(total_peers!=0){
+    for(int i=0; i<total_peers; i++){
+      sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
+      free(existing_peers[i]);
+    }
+
+    nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
+    #endif
+  }
 
 
 
