@@ -254,13 +254,46 @@ void * handle_get(void * arg){
 
 void * handle_reg(void * arg){
 
-  char resp_buff[100];
+  char *resp_buff;
+  int total_peers;
+  char ** existing_peers;
   int nbytes;
 
   // GET ARGUMENTS
   args *arguments = (args*)arg;
   struct sockaddr_in client_addr = arguments->client_addr;
   peer_list *list = arguments->list;
+
+
+
+  // INITIALIZE RESPONSE SOCKET
+  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  // SENDING RESPONSE
+  #ifdef DEBUG
+    printf("\t\tDEBUG: RETRIEVING ALL EXISTING PEERS\n");
+  #endif
+
+  existing_peers = get_all_peers(list, &total_peers);
+
+  #ifdef DEBUG
+    printf("\t\tDEBUG: EXISTING PEERS:\n");
+    for(int i = 0; i<total_peers; i++)
+      printf("\t\t\t%s\n", existing_peers[i]);
+  #endif
+
+  resp_buff = (char*)malloc(sizeof(char)*(22*total_peers)+3);
+  sprintf(resp_buff, "OK");
+  for(int i=0; i<total_peers; i++){
+    sprintf(resp_buff+strlen(resp_buff), " %s", existing_peers[i]);
+    free(existing_peers[i]);
+  }
+
+  nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
+  #endif
+
 
   // ADDING PEER TO LIST
   #ifdef DEBUG
@@ -273,16 +306,9 @@ void * handle_reg(void * arg){
     print_peer_list(list);
   #endif
 
-  // INITIALIZE RESPONSE SOCKET
-  int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
-  // SENDING RESPONSE
-  sprintf(resp_buff, "OK");
-  nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
-  #ifdef DEBUG
-    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
-  #endif
 
+  free(existing_peers);
   free(arguments);
   close(resp_fd);
   return;

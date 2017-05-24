@@ -9,6 +9,7 @@ typedef struct _peer{
 
 typedef struct _peerlist{
 
+  int total;
   peer *next_to_use;
   peer *beginning;
 
@@ -16,6 +17,7 @@ typedef struct _peerlist{
 
 typedef struct _brotherlist{
 
+  int total;
   peer *last;
   peer *first;
 
@@ -76,11 +78,11 @@ void print_peer_list(peer_list *list);
 
 int get_peer(peer_list *list, char *ip, int *port);
 
+char **get_all_peers(peer_list *list, int* total);
+
 void remove_peer(peer_list *list, char *ip, int port);
 
 void free_peer_list(peer_list *list);
-
-peer_list *init_peer_list();
 
 
 // PEER LISTS FOR PEERS
@@ -91,13 +93,11 @@ void add_brother_list(brother_list *list, char *ip, int port);
 
 void print_brother_list(brother_list *list);
 
-int get_brother(brother_list *list, char *ip, int *port);
+char **get_all_brothers(brother_list * list, int *total);
 
 void remove_brother(brother_list *list, char *ip, int port);
 
 void free_brother_list(brother_list *list);
-
-brother_list *init_brother_list();
 
 
 // PHOTO LISTS

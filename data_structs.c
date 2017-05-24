@@ -345,6 +345,7 @@ peer_list *init_peer_list(){
 
   list->next_to_use = NULL;
   list->beginning = NULL;
+  list->total = 0;
 
   return list;
 
@@ -357,6 +358,7 @@ void add_peer_list(peer_list *list, char *ip, int port){
   strcpy(new->ip, ip);
   new->port = port;
   new->next = NULL;
+  list->total++;
 
   if(list->beginning == NULL){
 
@@ -378,7 +380,7 @@ void print_peer_list(peer_list *list){
   peer *aux;
   int i;
 
-  printf("\t\t\tDEBUG: PEERS LIST:\n");
+  printf("\t\t\tDEBUG: PEERS LIST TOTAL %d:\n", list->total);
   if(list->beginning!=NULL){
     if(list->beginning==list->beginning->next)
       printf("\t\t\tDEBUG: PEER 1: %s:%d\n", list->beginning->ip, list->beginning->port);
@@ -408,6 +410,33 @@ int get_peer(peer_list *list, char *ip, int *port){
 
 }
 
+
+char** get_all_peers(peer_list *list, int* total){
+
+  *total = list->total;
+
+  if(list->beginning!=NULL){
+
+    peer *aux;
+    int i;
+    char** peers = (char**)malloc(sizeof(char*)*list->total);
+
+
+    for(i=0; i<list->total; i++)
+      peers[i] = (char*)malloc(sizeof(char)*25);
+
+    sprintf(peers[0], "%s %d", list->beginning->ip, list->beginning->port);
+    if(list->beginning!=list->beginning->next){
+      for(i=1, aux = list->beginning->next; aux != list->beginning; aux=aux->next, i++)
+        sprintf(peers[i], "%s %d", aux->ip, aux->port);
+    }
+
+    return peers;
+  }
+
+  return NULL;
+}
+
 void remove_peer(peer_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
@@ -430,12 +459,14 @@ void remove_peer(peer_list *list, char *ip, int port){
       }
       // free element we want to remove
       free(actual);
+      list->total--;
     }
     // else: we just need to free the element make the previous element pointing to the next
     else{
 
       previous->next = actual->next;
       free(actual);
+      list->total--;
 
     }
   }
@@ -462,7 +493,7 @@ void free_peer_list(peer_list *list){
 
 
 // BROTHER LIST
-/*
+
 
 brother_list *init_brother_list(){
 
@@ -470,7 +501,7 @@ brother_list *init_brother_list(){
 
   list->first = NULL;
   list->last = NULL;
-
+  list->total = 0;
   return list;
 
 }
@@ -493,15 +524,155 @@ void add_brother_list(brother_list *list, char *ip, int port){
     list->last = new;
 
   }
+
+  list->total++;
 }
 
-void print_brother_list(peer_list *list){
+void print_brother_list(brother_list *list){
 
   peer *aux;
   int i;
 
+  printf("\t\tDEBUG: BROTHER LIST TOTAL %d:\n", list->total);
   if(list->first!=NULL)
-    for(aux = list->first; aux != NULL; aux=aux->next)
+    for(i=0, aux = list->first; aux != NULL; aux=aux->next, i++)
       printf("\t\t\tDEBUG: PEER %d - %s:%d\n", i, aux->ip, aux->port);
+}
+
+
+void remove_brother(brother_list *list, char *ip, int port){
+  peer *actual;
+  peer *previous;
+
+  if(list->first!=NULL){
+
+    for(actual = list->first; (strcmp(ip, actual->ip)!=0 && port!=actual->port);  previous = actual, actual=actual->next);
+
+    // first case: we want to remove the node that is the first of the list
+    if(actual == list->first){
+
+      if(list->last == list->first){
+        list->first = NULL;
+        list->last = NULL;
+      }else{
+        list->first = actual->next;
+      }
+      // free element we want to remove
+
+    }
+    // second case: we want to remove the last element
+    else if (actual == list->last){
+      previous->next = NULL;
+      list->last = previous;
+    }else{
+      previous->next = actual->next;
+    }
+    free(actual);
+
+    list->total--;
+  }
+}
+
+char **get_all_brothers(brother_list *list, int *total){
+
+  *total = list->total;
+
+  if(list->first!=NULL){
+    peer *aux;
+    int i;
+    char **brothers = (char**)malloc(sizeof(char*)*list->total);
+
+
+    for(i=0; i<list->total; i++)
+      brothers[i] = (char*)malloc(sizeof(char)*25);
+
+    if(list->first!=NULL)
+      for(i=0, aux = list->first; aux != NULL; aux=aux->next, i++)
+        sprintf(brothers[i], "%s %d", aux->ip, aux->port);
+
+    return brothers;
+
+  }
+  return NULL;
+}
+
+
+void free_brother_list(brother_list *list){
+
+  if(list->first!=NULL){
+
+    peer *actual, *previous;
+    actual = list->first;
+    while(actual!=NULL){
+      previous = actual;
+      actual = actual->next;
+      free(previous);
+    }
+  }
+
+  free(list);
+
+}
+
+
+// BROTHER LIST TESTS
+
+
+/*
+int main(){
+
+  peer_list * list = init_peer_list();
+
+  printf("ADDING BROTHERS\n");
+  add_peer_list(list, "127.0.0.1", 9012);
+  add_peer_list(list, "127.0.0.2", 9013);
+  add_peer_list(list, "127.0.0.3", 9014);
+  add_peer_list(list, "127.0.0.4", 9015);
+  add_peer_list(list, "127.0.0.5", 9016);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("REMOVING BROTHER - 127.0.0.5:9016\n");
+  remove_peer(list, "127.0.0.3", 9014);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("REMOVING BROTHER - 127.0.0.5:9016 (FIRST)\n");
+  remove_peer(list, "127.0.0.1", 9012);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("REMOVING BROTHER - 127.0.0.5:9016 (LAST)\n");
+  remove_peer(list, "127.0.0.5", 9016);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("ADDING BROTHER\n");
+  add_peer_list(list, "127.0.0.10", 9020);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("GETTING ALL BROTHERS\n");
+  char **brothers;
+  int total=0;
+  brothers = get_all_peers(list, &total);
+  for(int i = 0; i<total; i++){
+    printf("%s\n", brothers[i]);
+    free(brothers[i]);
+  }
+
+  free(brothers);
+
+  printf("PRITING BROTHERS\n");
+  print_peer_list(list);
+
+  printf("FREEING BROTHER LIST\n");
+  free_peer_list(list);
+
 }
 */
