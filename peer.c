@@ -125,11 +125,10 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   printf("nome %s\n", photo_name);
   sprintf(towrite, "testimgend/%s", photo_name);
   FILE *img = fopen(towrite, "wb");
-  int nbytes;
   printf("size = %lu\n", filesize);
 
 
-  nbytes = recv(client_fd, buffer, filesize, 0);
+  recv(client_fd, buffer, filesize, 0);
 
   printf("received\n");
   int i;
@@ -152,7 +151,6 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   char buff[100];
-  int nbytes;
 
   // OPENING FILE
   #ifdef DEBUG
@@ -266,7 +264,7 @@ void * handle_client(void * arg){
     sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
 
     #ifdef DEBUG
-      printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %lf\n", keyword, photo_id);
+      printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d\n", keyword, photo_id);
     #endif
 
     if(add_keyword_photo_hash(table, photo_id, keyword)){
@@ -302,11 +300,11 @@ void * handle_client(void * arg){
 
     uint32_t photo_id;
     char name[100];
-    sscanf(client_query, "%s %d", answer, photo_id);
+    sscanf(client_query, "%s %d", answer, &photo_id);
 
 
     #ifdef DEBUG
-      printf("\t\tDEBUG: GETTING PHOTO'S %lf NAME\n", photo_id);
+      printf("\t\tDEBUG: GETTING PHOTO'S %d NAME\n", photo_id);
     #endif
 
     if(get_photo_name_hash(table, photo_id, name)){
@@ -315,7 +313,7 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: FOUND PHOTO - %s\n", name);
       #endif
     }else{
-      sprintf(buff, "ERROR", ret);
+      sprintf(buff, "ERROR");
       #ifdef DEBUG
         printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
       #endif

@@ -321,7 +321,7 @@ void print_photo_hash(photo_hash_table *table){
 
 
 
-
+/*
 int main(){
 
   photo_hash_table * table = create_hash_table(769);
@@ -331,7 +331,7 @@ int main(){
   print_photo_hash(table);
   add_photo_hash_table(table, "Terceira", 9285);
   print_photo_hash(table);
-/*
+
   add_keyword_photo_hash(table, 9285, "buefixe");
   add_keyword_photo_hash(table, 9285, "buelinda");
   add_keyword_photo_hash(table, 9285, "buenice");
@@ -348,12 +348,12 @@ int main(){
   printf("%s", name);
   print_photo_hash(table);
   printf("PRINTING ret %d\n", ret);
-  print_photo_hash(table);*/
+  print_photo_hash(table);
 
   free_hash_table(table);
 
 }
-
+*/
 
 
 // GATEWAY
