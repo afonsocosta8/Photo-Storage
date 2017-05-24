@@ -25,42 +25,18 @@ typedef struct _args_regpeer{
 
 }args_regpeer;
 
+
+typedef struct _args_client{
+
+  int client_fd;
+  photo_hash_table *table;
+  char *host;
+
+}args_client;
+
 typedef struct _header{
   long	data_length;
 } header;
-/*
-uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize, char *host){
-
-  unsigned char *buffer = malloc(filesize);
-  char towrite[100];
-  uint32_t photo_id;
-  printf("nome %s\n", photo_name);
-  sprintf(towrite, "testimgend/%s", photo_name);
-  FILE *img = fopen(towrite, "wb");
-  int nbytes;
-  printf("size = %lu\n", filesize);
-
-
-  nbytes = recv(client_fd, buffer, filesize, 0);
-
-  printf("received\n");
-  int i;
-  for(i=0;i<1000;i++){
-    printf("%u ", buffer[i]);
-  }
-  printf("\n");
-  printf("printed\n");
-
-  fwrite(buffer,1,filesize,img);
-
-  //printf("wrote\n");
-  fclose(img);
-
-  //photo_id=get_photoid();
-
-  return 0;
-}
-*/
 
 uint32_t get_photoid(char * host){
 
@@ -141,9 +117,109 @@ uint32_t get_photoid(char * host){
 
 }
 
+uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
+
+  unsigned char *buffer = malloc(filesize);
+  char towrite[100];
+  uint32_t photo_id;
+  printf("nome %s\n", photo_name);
+  sprintf(towrite, "testimgend/%s", photo_name);
+  FILE *img = fopen(towrite, "wb");
+  int nbytes;
+  printf("size = %lu\n", filesize);
+
+
+  nbytes = recv(client_fd, buffer, filesize, 0);
+
+  printf("received\n");
+  int i;
+  for(i=0;i<1000;i++){
+    printf("%u ", buffer[i]);
+  }
+  printf("\n");
+  printf("printed\n");
+
+  fwrite(buffer,1,filesize,img);
+
+  //printf("wrote\n");
+  fclose(img);
+
+  photo_id=get_photoid(host);
+  add_photo_hash_table(table, photo_name, photo_id);
+  return photo_id;
+}
+
+int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
+
+  char buff[100];
+  int nbytes;
+
+  // OPENING FILE
+  #ifdef DEBUG
+    printf("\tDEBUG: OPENING FILE\n");
+  #endif
+
+  char photo_name[100], file_name[110];
+
+  if(get_photo_name_hash(table, photo_id, photo_name)==0){
+    return -1;
+  }
+
+  sprintf(file_name, "testimgend/%s", photo_name);
+
+  FILE *img = fopen(file_name, "rb");
+  if(img == NULL)
+    return 0;
+
+
+  // GET FILE CHARECTERISTICS
+  fseek(img, 0, SEEK_END);
+  size_t filesize = ftell(img);
+  fseek(img, 0, SEEK_SET);
+
+  sprintf(buff, "OK %zu", filesize);
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
+  #endif
+
+  if(send(client_fd, buff, sizeof(buff), 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+    #endif
+    fclose(img);
+    close(client_fd);
+    return 0;
+  }
+
+  #ifdef DEBUG
+    printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
+  #endif
+
+  unsigned char *buffer = malloc(filesize);
+  fread(buffer, sizeof *buffer, filesize, img);
+
+  if(send(client_fd, buffer, filesize, 0)==-1){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
+    #endif
+    fclose(img);
+    close(client_fd);
+    return 0;
+  }
+  return 1;
+}
+
+
+
+
 void * handle_client(void * arg){
-/*
-  int client_fd = *(int*)arg;
+  args_client *arguments = (args_client*)arg;
+  char host[20];
+  strcpy(host, arguments->host);
+  photo_hash_table *table = arguments->table;
+  int client_fd = arguments->client_fd;
+  free(arguments);
   int nbytes;
   char client_query[100];
   char buff[100];
@@ -157,14 +233,15 @@ void * handle_client(void * arg){
     unsigned long filesize;
     uint32_t photo_id;
 
+    sscanf(client_query, "%s %s %lu", answer, photo_name, &filesize);
+
     sprintf(buff, "OK");
     nbytes = send(client_fd, buff, strlen(buff)+1, 0);
     printf("replying %d bytes\n", nbytes);
 
-    sscanf(client_query, "%s %s %lu", answer, photo_name, &filesize);
-    photo_id = add_photo(client_fd, photo_name, filesize);
+    photo_id = add_image(client_fd, photo_name, filesize, host, table);
     if (photo_id!=0) {
-      sprintf(buff, "OK");
+      sprintf(buff, "OK %d", photo_id);
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       printf("replying %d bytes\n", nbytes);
     }else{
@@ -175,7 +252,6 @@ void * handle_client(void * arg){
     }
 
   }
-*/
   /*else if(strstr(client_query, "ADDKEY") != NULL) {
     char keyword[30];
     uint32_t photo_id;
@@ -195,11 +271,17 @@ void * handle_client(void * arg){
     char *name;
     sscanf(client_query, "%s %d", answer, photo_id);
     get_name(client_fd, photo_id, name);
-  }else if(strstr(client_query, "GETPHOTO") != NULL) {
+  }*/else if(strstr(client_query, "GETPHOTO") != NULL) {
     uint32_t photo_id;
-    sscanf(client_query, "%s %d", answer, photo_id);
-    get_photo(client_fd, photo_id);
-  }*/
+    int res;
+    sscanf(client_query, "%s %d", answer, &photo_id);
+    res = get_photo(client_fd, photo_id, table);
+    if(res!=1){
+      sprintf(buff, "ERROR");
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+      printf("replying %d bytes\n", nbytes);
+    }
+  }
   return;
 }
 
@@ -488,8 +570,6 @@ int main(int argc, char const *argv[]) {
 
 
 
-
-
   // FIRST PEER TASK IS TO RETRIEVE ANOTHER PEER IP ADDRESS TO DOWNLOAD ALL THE DATA
   // PREPARING MESSAGE
 
@@ -629,8 +709,14 @@ int main(int argc, char const *argv[]) {
 
   // READY TO ACCEPT CLIENTS
   printf("READY TO ACCEPT CLIENT CONNECTIONS\n");
-
+  args_client *arguments1;
   while(1){
+
+
+    arguments1 = (args_client*)malloc(sizeof(args_client));
+    arguments1->table = photos;
+    arguments1->client_fd = client_fd;
+    arguments1->host = host;
 
     #ifdef DEBUG
       printf("\tDEBUG: WAITING FOR CLIENTS...\n");
@@ -638,7 +724,7 @@ int main(int argc, char const *argv[]) {
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
     printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
 
-    if(pthread_create(&thr_id, NULL, handle_client, &client_fd)!=0){
+    if(pthread_create(&thr_id, NULL, handle_client, arguments1)!=0){
       printf("ERROR CREATING THREAD FOR CLIENT\n");
       exit(-1);
     }
@@ -676,6 +762,5 @@ int main(int argc, char const *argv[]) {
     exit(0);
     */
   }
-
   exit(0);
 }
