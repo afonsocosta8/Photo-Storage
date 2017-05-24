@@ -28,7 +28,7 @@ typedef struct _args_regpeer{
 typedef struct _header{
   long	data_length;
 } header;
-
+/*
 uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize, char *host){
 
   unsigned char *buffer = malloc(filesize);
@@ -56,11 +56,11 @@ uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize, char
   //printf("wrote\n");
   fclose(img);
 
-  photo_id=get_photoid();
+  //photo_id=get_photoid();
 
-  return photo_id;
+  return 0;
 }
-
+*/
 
 uint32_t get_photoid(char * host){
 
@@ -209,7 +209,7 @@ void * handle_alive(void * arg){
 	struct sockaddr_in server_addr;
   struct sockaddr_in client_addr;
 	socklen_t size_addr;
-	char buff[20];
+	char buff[100];
 	int nbytes;
   char host[20];
   int p,mp;
@@ -307,6 +307,9 @@ void * handle_alive(void * arg){
   // RECEIVING MESSAGE FROM GATEWAY
   char get_gw_resp[25];
   char resp_code[4];
+  char recv_code[5];
+  char rmv_ip[20];
+  int rmv_port;
   int num_peers;
   nbytes = 0;
   nbytes = recv(sock_fd, get_gw_resp, 9, 0);
@@ -340,12 +343,13 @@ void * handle_alive(void * arg){
         printf("\t\tADDING BROTHER PEERS TO DATASTRUCT\n");
       #endif
       brother_ip = strtok(active_peers," ");
-      printf("\t\t%s\n", brother_ip);
 
       while (brother_ip != NULL) {
         brother_port = atoi(strtok (NULL," "));
         add_brother_list(list, brother_ip, brother_port);
-        printf("\t\t ADDING %s:%d TO BROTHERS LIST\n", brother_ip, brother_port);
+        #ifdef DEBUG
+          printf("\t\tADDING %s:%d TO BROTHERS LIST\n", brother_ip, brother_port);
+        #endif
         brother_ip = strtok(NULL," ");
       }
       #ifdef DEBUG
@@ -375,21 +379,59 @@ void * handle_alive(void * arg){
     printf("\t\tDEBUG: LISTENING FOR UALIVE? QUERYS\n");
   #endif
   size_addr = sizeof(client_addr);
+
   while(1){
-    nbytes = recvfrom(sock_fd, buff, 20, 0, (struct sockaddr *) & client_addr, &size_addr);
+
+    nbytes = recvfrom(sock_fd, buff, 100, 0, (struct sockaddr *) & client_addr, &size_addr);
     #ifdef DEBUG
       printf("\t\tDEBUG: %dB RECV FROM %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),  buff);
     #endif
-    if(strcmp(buff, "UALIVE?")!=0) {
-      printf("UNEXPECTED MESSAGE\n");
-    }else{
+
+
+    if(strcmp(buff, "UALIVE?")==0) {
       printf("RECEIVED UALIVE FROM GW. ANSWERING...\n");
       sprintf(buff, "OK");
       nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
       #ifdef DEBUG
         printf("\t\tDEBUG: SENT %dB TO PEER %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buff);
       #endif
+    }else{
+      sscanf(buff, "%s %s %d", recv_code, rmv_ip, &rmv_port);
+      if(strcmp(recv_code, "RMV")==0){
+        #ifdef DEBUG
+          printf("\t\tDECODED AS RMV PEER: REMOVING %s:%d\n", rmv_ip, rmv_port);
+        #endif
+
+        remove_brother(list, rmv_ip, rmv_port);
+
+        #ifdef DEBUG
+          printf("\t\tBROTHERS LIST: \n");
+          print_brother_list(list);
+        #endif
+
+
+      }else if(strcmp(recv_code, "ADD")==0){
+        #ifdef DEBUG
+          printf("\t\tDECODED AS ADD PEER: ADDING %s:%d\n", rmv_ip, rmv_port);
+        #endif
+
+        add_brother_list(list, rmv_ip, rmv_port);
+
+        #ifdef DEBUG
+          printf("\t\tBROTHERS LIST: \n");
+          print_brother_list(list);
+        #endif
+
+      }else{
+
+        #ifdef DEBUG
+          printf("\t\tCOULD NOT DECODE MESSAGE\n");
+        #endif
+
+      }
+
     }
+
   }
 
 }
@@ -405,9 +447,6 @@ int main(int argc, char const *argv[]) {
   int i;
   int get_peer_fd;
   int nbytes;
-  struct timeval tv;
-  tv.tv_sec       = 1;
-  tv.tv_usec      = 500000;
 
   photo_hash_table * photos =  create_hash_table(769);
   brother_list * brothers = init_brother_list();
@@ -461,13 +500,6 @@ int main(int argc, char const *argv[]) {
     perror("ERROR CREATING SOCKET\n");
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT CREATE SOCKET\n");
-    #endif
-    exit(-1);
-  }
-  if(setsockopt(get_peer_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT SET SOCKET OPTS\n");
     #endif
     exit(-1);
   }

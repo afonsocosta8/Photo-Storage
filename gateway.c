@@ -25,10 +25,68 @@ typedef struct _args_remv_peer{
 
 }args_remv_peer;
 
-void * inform_remove_peers(void * args_remv_peer){
-  pthread_t thr_id;
+void * inform_remove_peers(void * input){
+
+  args_remv_peer * args = (args_remv_peer*)input;
+  char ip[20];
+  int port;
+  peer_list *list = args->list;
+  strcpy(ip, args->ip);
+  port = args->port;
+  free(args);
 
 
+  struct sockaddr_in peer_addr;
+  int nbytes, sock_fd;
+  char buff[100];
+  char peer_ip[20];
+  int peer_port;
+
+  int total;
+  char ** peers = get_all_peers(list, &total);
+
+  for(int i = 0; i<total; i++){
+
+    sscanf(peers[i], "%s %d", peer_ip, &peer_port);
+    #ifdef DEBUG
+      printf("\t DEBUG: INFORMING %s %d OF %s:%d DEATH\n", peer_ip, peer_port, ip, port);
+    #endif
+
+    // CREATING SOCKET TO SEND MESSAGE
+    #ifdef DEBUG
+      printf("\tDEBUG: CREATING SOCKET...\n");
+    #endif
+    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if(sock_fd == -1){
+      perror("ERROR CREATING SOCKER\n");
+      exit(-1);
+    }
+
+    // PREPARING TO SEND MESSAGE TO GATEWAY
+    #ifdef DEBUG
+      printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+    #endif
+    peer_addr.sin_family = AF_INET;
+    peer_addr.sin_port = peer_port;
+    inet_aton(peer_ip, &peer_addr.sin_addr);
+    sprintf(buff, "RMV %s %d", ip, port);
+
+    nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
+    #endif
+    if(nbytes==-1){
+      #ifdef DEBUG
+        printf("\tDEBUG: MESSAGE NOT SENT\n");
+      #endif
+    }
+
+
+    close(sock_fd);
+    free(peers[i]);
+  }
+
+  free(peers);
 
 }
 
@@ -44,18 +102,15 @@ void remove_peer_list(peer_list *list,char* ip, int port){
   args->port = port;
   args->list = list;
 
-  if(pthread_create(&thr_id, NULL, handle_get, arguments)!=0){
-    printf("ERROR CREATING THREAD FOR CLIENT %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+  pthread_t thr_id;
+  #ifdef DEBUG
+    printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
+  #endif
+
+  if(pthread_create(&thr_id, NULL, inform_remove_peers, args)!=0){
+    printf("ERROR CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
     exit(-1);
   }
-
-
-
-
-
-
-
-
 
 }
 
@@ -66,7 +121,7 @@ void * handle_ticket(){
   socklen_t size_addr;
   int sock_fd;
   int nbytes;
-  uint32_t photo_id=0;
+  uint32_t photo_id=1;
 
   // CREATING SOCKET TO RECV MESSAGES
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -296,6 +351,84 @@ void * handle_get(void * arg){
   return;
 }
 
+
+
+void * inform_add_peers(peer_list *list, char *ip, int port){
+
+  struct sockaddr_in peer_addr;
+  int nbytes, sock_fd;
+  char buff[100];
+  char peer_ip[20];
+  int peer_port;
+
+  int total;
+  char ** peers = get_all_peers(list, &total);
+
+  for(int i = 0; i<total; i++){
+
+    sscanf(peers[i], "%s %d", peer_ip, &peer_port);
+    #ifdef DEBUG
+      printf("\t DEBUG: INFORMING %s %d TO ADD %s:%d\n", peer_ip, peer_port, ip, port);
+    #endif
+
+    // CREATING SOCKET TO SEND MESSAGE
+    #ifdef DEBUG
+      printf("\tDEBUG: CREATING SOCKET...\n");
+    #endif
+    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if(sock_fd == -1){
+      perror("ERROR CREATING SOCKER\n");
+      exit(-1);
+    }
+
+    // PREPARING TO SEND MESSAGE TO GATEWAY
+    #ifdef DEBUG
+      printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+    #endif
+    peer_addr.sin_family = AF_INET;
+    peer_addr.sin_port = peer_port;
+    inet_aton(peer_ip, &peer_addr.sin_addr);
+    sprintf(buff, "ADD %s %d", ip, port);
+
+    nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
+    #endif
+    if(nbytes==-1){
+      #ifdef DEBUG
+        printf("\tDEBUG: MESSAGE NOT SENT\n");
+      #endif
+    }
+
+
+    close(sock_fd);
+    free(peers[i]);
+  }
+
+  free(peers);
+
+}
+
+
+void add_peer(peer_list *list, char * ip, int port){
+
+  // INFORMING OTHER PEERS TO ADD THAT PEER
+  args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
+  strcpy(args->ip, ip);
+  args->port = port;
+  args->list = list;
+
+  pthread_t thr_id;
+  #ifdef DEBUG
+    printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
+  #endif
+
+  inform_add_peers(list, ip, port);
+
+  add_peer_list(list, ip, port);
+
+}
+
 void * handle_reg(void * arg){
 
   char *resp_buff;
@@ -354,7 +487,7 @@ void * handle_reg(void * arg){
     printf("\t\tDEBUG: ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
   #endif
   printf("ADDIND PEER %s:%d TO LIST\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-  add_peer_list(list, inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+  add_peer(list, inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
   #ifdef DEBUG
     printf("\t\tDEBUG: REGISTERING PEER OK\n");
     print_peer_list(list);
