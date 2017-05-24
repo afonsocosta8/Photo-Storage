@@ -169,27 +169,40 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     return 0;
 
 
+  // OPENING FILE
+  #ifdef DEBUG
+    printf("\tDEBUG: GETTING FILE CHARACTERISTICS\n");
+  #endif
+
+
+
   // GET FILE CHARECTERISTICS
   fseek(img, 0, SEEK_END);
   size_t filesize = ftell(img);
   fseek(img, 0, SEEK_SET);
 
+  #ifdef DEBUG
+    printf("\tDEBUG: FINISHED GETTING FILE CHARECTERISTICS\n");
+  #endif
+
 
   // PREPARING PROTOCOL MESSAGE TO PEER
 
-   const char needle[10] = "/";
-   char *ret;
-   char *t;
-   ret = strstr(file_name, needle);
-   ret=ret+1;
-   while(ret!=NULL){
-        t=ret;
-        ret = strstr(ret, needle);
-        if(ret!=NULL){
-                ret=ret+1;
-        }
-   }
-   printf("Filename is: %s\n", t);
+  const char needle[10] = "/";
+  char *ret;
+  char *t;
+  ret = strstr(file_name, needle);
+  ret=ret+1;
+  while(ret!=NULL){
+    t=ret;
+    ret = strstr(ret, needle);
+    if(ret!=NULL){
+            ret=ret+1;
+    }
+  }
+
+
+  printf("Filename is: %s\n", t);
 
 
   sprintf(buff, "ADDPHOTO %s %zu", t, filesize);

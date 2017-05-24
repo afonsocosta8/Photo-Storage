@@ -47,8 +47,7 @@ int main(int argc, char const *argv[]) {
   int photo_id;
   if(psock>0)
     photo_id = gallery_add_photo(psock, "5000.png");
+  
   close(psock);
-
-
   return 0;
 }
