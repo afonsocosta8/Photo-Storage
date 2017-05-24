@@ -307,9 +307,12 @@ void * handle_alive(void * arg){
   #ifdef DEBUG
     printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  get_gw_resp);
   #endif
-  if(strcmp(get_gw_resp, "OK")!=0) {
+  sscanf(get_gw_resp, "%s %d", resp_code, num_peers);
+  if(strcmp(resp_code, "OK")!=0) {
     printf("ERROR ON RECEIVING FROM GATEWAY\n");
     exit(-1);
+  }else{
+    printf("THERE ARE %d ACTIVE PEERS\n");
   }
 
 
