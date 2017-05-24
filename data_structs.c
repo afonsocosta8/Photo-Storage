@@ -105,6 +105,7 @@ photo_list *init_photo_list(){
 
 void add_photo(photo_list *photos, char *name, uint32_t id){
 
+  pthread_mutex_lock(&(photos->lock));
   photo *new = (photo*)malloc(sizeof(photo));
 
   strcpy(new->name, name);
@@ -124,6 +125,8 @@ void add_photo(photo_list *photos, char *name, uint32_t id){
 
   }
 
+  pthread_mutex_unlock(&(photos->lock));
+
 }
 
 
@@ -131,10 +134,12 @@ void add_photo(photo_list *photos, char *name, uint32_t id){
 photo * search_photo_by_id(photo_list *photos, uint32_t id){
   photo *aux;
 
+
   if(photos->list!=NULL)
     for(aux = photos->list; aux != NULL; aux=aux->next)
       if(aux->id == id)
         return aux;
+
 
   return NULL;
 
@@ -144,11 +149,15 @@ photo * search_photo_by_id(photo_list *photos, uint32_t id){
 
 int add_keyword_photo(photo_list *photos, uint32_t id, char *keyword){
 
+
+  pthread_mutex_lock(&(photos->lock));
   photo * target = search_photo_by_id(photos, id);
   if(target!=NULL){
     add_keyword_list(target->keywords, keyword);
+    pthread_mutex_unlock(&(photos->lock));
     return 1;
   }
+  pthread_mutex_unlock(&(photos->lock));
 
   return 0;
 }
@@ -157,12 +166,16 @@ int add_keyword_photo(photo_list *photos, uint32_t id, char *keyword){
 
 int get_photo_name(photo_list *photos, uint32_t id, char *name){
 
+
+  pthread_mutex_lock(&(photos->lock));
   photo * target = search_photo_by_id(photos, id);
   if(target!=NULL){
     strcpy(name, target->name);
+    pthread_mutex_unlock(&(photos->lock));
     return 1;
   }
 
+  pthread_mutex_unlock(&(photos->lock));
   return 0;
 }
 
@@ -172,8 +185,12 @@ int delete_photo(photo_list *photos, uint32_t id){
   photo *actual = NULL;
   photo *previous = NULL;
 
-  if(photos->list==NULL)
+  pthread_mutex_lock(&(photos->lock));
+
+  if(photos->list==NULL){
+    pthread_mutex_unlock(&(photos->lock));
     return 0;
+  }
 
   if(photos->list->id == id){
     actual = photos->list;
@@ -183,9 +200,10 @@ int delete_photo(photo_list *photos, uint32_t id){
   }else{
     for(actual = photos->list; actual != NULL && actual->id != id; previous = actual, actual=actual->next);
 
-    if(actual==NULL)
+    if(actual==NULL){
+      pthread_mutex_unlock(&(photos->lock));
       return 0;
-
+    }
     previous->next = actual->next;
   }
 
@@ -193,6 +211,7 @@ int delete_photo(photo_list *photos, uint32_t id){
   free(actual);
 
   photos->total--;
+  pthread_mutex_unlock(&(photos->lock));
   return 1;
 
 }
@@ -203,17 +222,20 @@ int delete_photo(photo_list *photos, uint32_t id){
 void print_photo_list(photo_list *list){
 
   photo *aux;
-
+  pthread_mutex_lock(&(list->lock));
   if(list->list!=NULL)
     for(aux = list->list; aux != NULL; aux=aux->next){
       printf("\t\tDEBUG: PHOTO ID: %d NAME: %s\n", aux->id, aux->name);
       print_keyword_list(aux->keywords);
     }
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 
 
 void free_photo_list(photo_list *list){
+
 
   if(list->list!=NULL){
 
@@ -298,21 +320,18 @@ void print_photo_hash(photo_hash_table *table){
 }
 
 
-/*
+
 
 int main(){
 
   photo_hash_table * table = create_hash_table(769);
   add_photo_hash_table(table, "Primeira", 9283);
   print_photo_hash(table);
-
-  printf("FREEING\n");
-  int ret = delete_photo_hash(table, 9283);
   add_photo_hash_table(table, "Segunda", 9284);
   print_photo_hash(table);
   add_photo_hash_table(table, "Terceira", 9285);
   print_photo_hash(table);
-
+/*
   add_keyword_photo_hash(table, 9285, "buefixe");
   add_keyword_photo_hash(table, 9285, "buelinda");
   add_keyword_photo_hash(table, 9285, "buenice");
@@ -329,12 +348,13 @@ int main(){
   printf("%s", name);
   print_photo_hash(table);
   printf("PRINTING ret %d\n", ret);
-  print_photo_hash(table);
+  print_photo_hash(table);*/
+
   free_hash_table(table);
 
 }
 
-*/
+
 
 // GATEWAY
 
@@ -352,6 +372,9 @@ peer_list *init_peer_list(){
 }
 
 void add_peer_list(peer_list *list, char *ip, int port){
+
+
+  pthread_mutex_lock(&(list->lock));
 
   peer *new = (peer*)malloc(sizeof(peer));
 
@@ -373,9 +396,14 @@ void add_peer_list(peer_list *list, char *ip, int port){
     aux->next = new;
 
   }
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 void print_peer_list(peer_list *list){
+
+
+  pthread_mutex_lock(&(list->lock));
 
   peer *aux;
   int i;
@@ -391,12 +419,22 @@ void print_peer_list(peer_list *list){
       printf("\t\t\tDEBUG: PEER %d: %s:%d\n", i, aux->ip, aux->port);
     }
   }
+
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 int get_peer(peer_list *list, char *ip, int *port){
 
-  if(list->beginning == NULL)
+
+  pthread_mutex_lock(&(list->lock));
+
+  if(list->beginning == NULL){
+
+    pthread_mutex_unlock(&(list->lock));
     return 0;
+
+  }
 
   if(list->next_to_use==NULL)
     list->next_to_use = list->beginning;
@@ -406,6 +444,8 @@ int get_peer(peer_list *list, char *ip, int *port){
 
   list->next_to_use = list->next_to_use->next;
 
+
+  pthread_mutex_unlock(&(list->lock));
   return 1;
 
 }
@@ -413,6 +453,7 @@ int get_peer(peer_list *list, char *ip, int *port){
 
 char** get_all_peers(peer_list *list, int* total){
 
+  pthread_mutex_lock(&(list->lock));
   *total = list->total;
 
   if(list->beginning!=NULL){
@@ -430,14 +471,16 @@ char** get_all_peers(peer_list *list, int* total){
       for(i=1, aux = list->beginning->next; aux != list->beginning; aux=aux->next, i++)
         sprintf(peers[i], "%s %d", aux->ip, aux->port);
     }
-
+    pthread_mutex_unlock(&(list->lock));
     return peers;
   }
 
+  pthread_mutex_unlock(&(list->lock));
   return NULL;
 }
 
 void remove_peer(peer_list *list, char *ip, int port){
+  pthread_mutex_lock(&(list->lock));
   peer *actual;
   peer *previous;
   if(list->beginning!=NULL){
@@ -470,6 +513,7 @@ void remove_peer(peer_list *list, char *ip, int port){
 
     }
   }
+  pthread_mutex_unlock(&(list->lock));
 }
 
 void free_peer_list(peer_list *list){
@@ -508,6 +552,8 @@ brother_list *init_brother_list(){
 
 void add_brother_list(brother_list *list, char *ip, int port){
 
+  pthread_mutex_lock(&(list->lock));
+
   peer *new = (peer*)malloc(sizeof(peer));
 
   strcpy(new->ip, ip);
@@ -526,10 +572,13 @@ void add_brother_list(brother_list *list, char *ip, int port){
   }
 
   list->total++;
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 void print_brother_list(brother_list *list){
 
+  pthread_mutex_lock(&(list->lock));
   peer *aux;
   int i;
 
@@ -537,12 +586,16 @@ void print_brother_list(brother_list *list){
   if(list->first!=NULL)
     for(i=0, aux = list->first; aux != NULL; aux=aux->next, i++)
       printf("\t\t\tDEBUG: PEER %d - %s:%d\n", i, aux->ip, aux->port);
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 
 void remove_brother(brother_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
+
+  pthread_mutex_lock(&(list->lock));
 
   if(list->first!=NULL){
 
@@ -571,9 +624,14 @@ void remove_brother(brother_list *list, char *ip, int port){
 
     list->total--;
   }
+
+  pthread_mutex_unlock(&(list->lock));
 }
 
 char **get_all_brothers(brother_list *list, int *total){
+
+
+  pthread_mutex_lock(&(list->lock));
 
   *total = list->total;
 
@@ -590,9 +648,12 @@ char **get_all_brothers(brother_list *list, int *total){
       for(i=0, aux = list->first; aux != NULL; aux=aux->next, i++)
         sprintf(brothers[i], "%s %d", aux->ip, aux->port);
 
+    pthread_mutex_unlock(&(list->lock));
     return brothers;
 
+
   }
+  pthread_mutex_unlock(&(list->lock));
   return NULL;
 }
 
@@ -675,4 +736,3 @@ int main(){
   free_peer_list(list);
 
 }*/
-

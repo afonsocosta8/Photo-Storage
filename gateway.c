@@ -353,7 +353,7 @@ void * handle_get(void * arg){
 
 
 
-void * inform_add_peers(peer_list *list, char *ip, int port){
+void inform_add_peers(peer_list *list, char *ip, int port){
 
   struct sockaddr_in peer_addr;
   int nbytes, sock_fd;

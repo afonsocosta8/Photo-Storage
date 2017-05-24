@@ -212,7 +212,6 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
 
 
-
 void * handle_client(void * arg){
   args_client *arguments = (args_client*)arg;
   char host[20];
@@ -252,12 +251,42 @@ void * handle_client(void * arg){
     }
 
   }
-  /*else if(strstr(client_query, "ADDKEY") != NULL) {
-    char keyword[30];
+  else if(strstr(client_query, "ADDKEY") != NULL) {
+
+
+    char keyword[50];
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS ADD KEYWORD\n");
+    #endif
+
     uint32_t photo_id;
     sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
-    add_key(client_fd, photo_id, keyword);
-  }else if(strstr(client_query, "SEARCH") != NULL) {
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %lf\n", keyword, photo_id);
+    #endif
+
+    if(add_keyword_photo_hash(table, photo_id, keyword)){
+      sprintf(buff, "OK");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
+      #endif
+
+    }else{
+      sprintf(buff, "ERROR");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+    }
+
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
+
+  /*}else if(strstr(client_query, "SEARCH") != NULL) {
     char keyword[30];
     uint32_t *ids;
     sscanf(client_query, "%s %s", answer, keyword);
@@ -266,12 +295,37 @@ void * handle_client(void * arg){
     uint32_t photo_id;
     sscanf(client_query, "%s %d", answer, photo_id);
     delete_photo(client_fd, photo_id);
-  }else if(strstr(client_query, "GETNAME") != NULL) {
+  */}else if(strstr(client_query, "GETNAME") != NULL) {
+
     uint32_t photo_id;
-    char *name;
+    char name[100];
     sscanf(client_query, "%s %d", answer, photo_id);
-    get_name(client_fd, photo_id, name);
-  }*/else if(strstr(client_query, "GETPHOTO") != NULL) {
+
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: GETTING PHOTO'S %lf NAME\n", photo_id);
+    #endif
+
+    if(get_photo_name_hash(table, photo_id, name)){
+      sprintf(buff, "OK %s", name);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: FOUND PHOTO - %s\n", name);
+      #endif
+    }else{
+      sprintf(buff, "ERROR", ret);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+    }
+
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
+
+  }else if(strstr(client_query, "GETPHOTO") != NULL) {
     uint32_t photo_id;
     int res;
     sscanf(client_query, "%s %d", answer, &photo_id);
