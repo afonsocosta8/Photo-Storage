@@ -595,33 +595,49 @@ void remove_brother(brother_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
 
+  #ifdef DEBUG
+    printf("\t\t\t\tDEBUG: LOCKING LIST\n");
+  #endif
   pthread_mutex_lock(&(list->lock));
 
   if(list->first!=NULL){
-
+    #ifdef DEBUG
+      printf("\t\t\t\tDEBUG: SEARCHING FOR BROTHER\n");
+    #endif
     for(actual = list->first; !(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
+
 
     // first case: we want to remove the node that is the first of the list
     if(actual == list->first){
-
+      #ifdef DEBUG
+        printf("\t\t\t\tDEBUG: FIRST ELEMENT\n");
+      #endif
       if(list->last == list->first){
         list->first = NULL;
         list->last = NULL;
       }else{
         list->first = actual->next;
+        #ifdef DEBUG
+          printf("\t\t\t\tDEBUG: FIRST ELEMENT EQUALS LAST ELEMENT\n");
+        #endif
       }
       // free element we want to remove
 
     }
     // second case: we want to remove the last element
     else if (actual == list->last){
+      #ifdef DEBUG
+        printf("\t\t\t\tDEBUG: LAST ELEMENT\n");
+      #endif
       previous->next = NULL;
       list->last = previous;
     }else{
       previous->next = actual->next;
     }
+    #ifdef DEBUG
+      printf("\t\t\t\tDEBUG: FREEING...\n");
+    #endif
     free(actual);
-
     list->total--;
   }
 
