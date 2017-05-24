@@ -441,7 +441,7 @@ void remove_peer(peer_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
   if(list->beginning!=NULL){
-    for(actual = list->beginning; (strcmp(ip, actual->ip)!=0 && port!=actual->port);  previous = actual, actual=actual->next);
+    for(actual = list->beginning;!(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
 
     // first case: we want to remove the node that is the beginning of the list
     if(actual == list->beginning){
@@ -546,7 +546,7 @@ void remove_brother(brother_list *list, char *ip, int port){
 
   if(list->first!=NULL){
 
-    for(actual = list->first; (strcmp(ip, actual->ip)!=0 && port!=actual->port);  previous = actual, actual=actual->next);
+    for(actual = list->first; !(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
 
     // first case: we want to remove the node that is the first of the list
     if(actual == list->first){
@@ -617,8 +617,8 @@ void free_brother_list(brother_list *list){
 
 // BROTHER LIST TESTS
 
-
 /*
+
 int main(){
 
   peer_list * list = init_peer_list();
@@ -633,13 +633,13 @@ int main(){
   printf("PRITING BROTHERS\n");
   print_peer_list(list);
 
-  printf("REMOVING BROTHER - 127.0.0.5:9016\n");
+  printf("REMOVING BROTHER - 127.0.0.3:9014\n");
   remove_peer(list, "127.0.0.3", 9014);
 
   printf("PRITING BROTHERS\n");
   print_peer_list(list);
 
-  printf("REMOVING BROTHER - 127.0.0.5:9016 (FIRST)\n");
+  printf("REMOVING BROTHER - 127.0.0.1:9012 (FIRST)\n");
   remove_peer(list, "127.0.0.1", 9012);
 
   printf("PRITING BROTHERS\n");
@@ -674,5 +674,5 @@ int main(){
   printf("FREEING BROTHER LIST\n");
   free_peer_list(list);
 
-}
-*/
+}*/
+
