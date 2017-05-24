@@ -484,33 +484,36 @@ void remove_peer(peer_list *list, char *ip, int port){
   peer *actual;
   peer *previous;
   if(list->beginning!=NULL){
-    for(actual = list->beginning;!(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
+    for(actual = list->beginning; !(strcmp(ip, actual->ip)==0 && port==actual->port) && actual != NULL;  previous = actual, actual=actual->next);
 
-    // first case: we want to remove the node that is the beginning of the list
-    if(actual == list->beginning){
-      peer* last;
+    if(actual != NULL){
 
-      // find last element on the list
-      for(last = list->beginning; last->next != list->beginning; last=last->next);
-      // if last == begining, then there is only one element on the list, put beginning pointing to NULL
-      if(last == list->beginning){
-        list->beginning = NULL;
-        list->next_to_use = NULL;
-      }else{
-        // put the begining and last element of the list pointing to the second element of the list
-        last->next = list->beginning = actual->next;
+      // first case: we want to remove the node that is the beginning of the list
+      if(actual == list->beginning){
+        peer* last;
+
+        // find last element on the list
+        for(last = list->beginning; last->next != list->beginning; last=last->next);
+        // if last == begining, then there is only one element on the list, put beginning pointing to NULL
+        if(last == list->beginning){
+          list->beginning = NULL;
+          list->next_to_use = NULL;
+        }else{
+          // put the begining and last element of the list pointing to the second element of the list
+          last->next = list->beginning = actual->next;
+        }
+        // free element we want to remove
+        free(actual);
+        list->total--;
       }
-      // free element we want to remove
-      free(actual);
-      list->total--;
-    }
-    // else: we just need to free the element make the previous element pointing to the next
-    else{
+      // else: we just need to free the element make the previous element pointing to the next
+      else{
 
-      previous->next = actual->next;
-      free(actual);
-      list->total--;
+        previous->next = actual->next;
+        free(actual);
+        list->total--;
 
+      }
     }
   }
   pthread_mutex_unlock(&(list->lock));
@@ -604,41 +607,42 @@ void remove_brother(brother_list *list, char *ip, int port){
     #ifdef DEBUG
       printf("\t\t\t\tDEBUG: SEARCHING FOR BROTHER\n");
     #endif
-    for(actual = list->first; !(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
+    for(actual = list->first; !(strcmp(ip, actual->ip)==0 && port==actual->port) && actual != NULL;  previous = actual, actual=actual->next);
 
-
-    // first case: we want to remove the node that is the first of the list
-    if(actual == list->first){
-      #ifdef DEBUG
-        printf("\t\t\t\tDEBUG: FIRST ELEMENT\n");
-      #endif
-      if(list->last == list->first){
-        list->first = NULL;
-        list->last = NULL;
-      }else{
-        list->first = actual->next;
+    if(actal != NULL){
+      // first case: we want to remove the node that is the first of the list
+      if(actual == list->first){
         #ifdef DEBUG
-          printf("\t\t\t\tDEBUG: FIRST ELEMENT EQUALS LAST ELEMENT\n");
+          printf("\t\t\t\tDEBUG: FIRST ELEMENT\n");
         #endif
-      }
-      // free element we want to remove
+        if(list->last == list->first){
+          list->first = NULL;
+          list->last = NULL;
+        }else{
+          list->first = actual->next;
+          #ifdef DEBUG
+            printf("\t\t\t\tDEBUG: FIRST ELEMENT EQUALS LAST ELEMENT\n");
+          #endif
+        }
+        // free element we want to remove
 
-    }
-    // second case: we want to remove the last element
-    else if (actual == list->last){
+      }
+      // second case: we want to remove the last element
+      else if (actual == list->last){
+        #ifdef DEBUG
+          printf("\t\t\t\tDEBUG: LAST ELEMENT\n");
+        #endif
+        previous->next = NULL;
+        list->last = previous;
+      }else{
+        previous->next = actual->next;
+      }
       #ifdef DEBUG
-        printf("\t\t\t\tDEBUG: LAST ELEMENT\n");
+        printf("\t\t\t\tDEBUG: FREEING...\n");
       #endif
-      previous->next = NULL;
-      list->last = previous;
-    }else{
-      previous->next = actual->next;
+      free(actual);
+      list->total--;
     }
-    #ifdef DEBUG
-      printf("\t\t\t\tDEBUG: FREEING...\n");
-    #endif
-    free(actual);
-    list->total--;
   }
 
   pthread_mutex_unlock(&(list->lock));
