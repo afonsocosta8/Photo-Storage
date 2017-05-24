@@ -791,7 +791,7 @@ int main(int argc, char const *argv[]) {
   }
 
   free_brother_list(brothers);
-  free_photo_list(photos);
+  free_hash_table(photos);
   close(sock_fd);
   exit(0);
 }
