@@ -26,10 +26,10 @@ typedef struct _header{
   long	data_length;
 } header;
 
-uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
+uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize, char *host){
   unsigned char *buffer = malloc(filesize);
   char towrite[100];
-  uint32_t photo_id=3;
+  uint32_t photo_id;
   printf("nome %s\n", photo_name);
   sprintf(towrite, "testimgend/%s", photo_name);
   FILE *img = fopen(towrite, "wb");
@@ -51,6 +51,8 @@ uint32_t add_photo(int client_fd, char *photo_name, unsigned long filesize){
 
   //printf("wrote\n");
   fclose(img);
+
+  photo_id=get_photoid();
 
   return photo_id;
 }
