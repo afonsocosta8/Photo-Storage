@@ -141,7 +141,7 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 
   fwrite(buffer,1,filesize,img);
 
-  //printf("wrote\n");
+  printf("wrote\n");
   fclose(img);
 
   photo_id=get_photoid(host);
@@ -160,24 +160,26 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   #endif
 
   char photo_name[100], file_name[110];
-
+  printf("ola\n");
+  print_photo_hash(table);
   if(get_photo_name_hash(table, photo_id, photo_name)==0){
     return -1;
   }
-
+  printf("name of photo to get: %s\n", photo_name);
   sprintf(file_name, "testimgend/%s", photo_name);
 
   FILE *img = fopen(file_name, "rb");
   if(img == NULL)
     return 0;
 
+  printf("ola\n");
 
   // GET FILE CHARECTERISTICS
   fseek(img, 0, SEEK_END);
   size_t filesize = ftell(img);
   fseek(img, 0, SEEK_SET);
 
-  sprintf(buff, "OK %zu", filesize);
+  sprintf(buff, "OK %s %zu", photo_name, filesize);
 
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
@@ -191,7 +193,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     close(client_fd);
     return 0;
   }
-
+  printf("ola\n");
   #ifdef DEBUG
     printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
   #endif
@@ -207,6 +209,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     close(client_fd);
     return 0;
   }
+  printf("ola\n");
   return 1;
 }
 
@@ -715,7 +718,6 @@ int main(int argc, char const *argv[]) {
 
     arguments1 = (args_client*)malloc(sizeof(args_client));
     arguments1->table = photos;
-    arguments1->client_fd = client_fd;
     arguments1->host = host;
 
     #ifdef DEBUG
@@ -723,6 +725,8 @@ int main(int argc, char const *argv[]) {
     #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
     printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+
+    arguments1->client_fd = client_fd;
 
     if(pthread_create(&thr_id, NULL, handle_client, arguments1)!=0){
       printf("ERROR CREATING THREAD FOR CLIENT\n");
