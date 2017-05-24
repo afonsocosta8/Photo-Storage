@@ -44,7 +44,11 @@ int main(int argc, char const *argv[]) {
   printf("connecting to peer\n");
   psock = gallery_connect(host, p);
   printf("connected to peer\n");
+  int photo_id;
   if(psock>0)
-    gallery_get_photo(psock, 11, "5000.png");
+    photo_id = gallery_add_photo(psock, "5000.png");
+  close(psock);
+
+
   return 0;
 }

@@ -87,6 +87,7 @@ void * inform_remove_peers(void * input){
   }
 
   free(peers);
+  return;
 
 }
 
@@ -191,6 +192,7 @@ void * handle_ticket(){
 
     }
   }
+  close(sock_fd);
 }
 
 void * handle_get(void * arg){
@@ -418,14 +420,16 @@ void add_peer(peer_list *list, char * ip, int port){
   args->port = port;
   args->list = list;
 
-  pthread_t thr_id;
-  #ifdef DEBUG
-    printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
-  #endif
+  if(list->total>0){
+    #ifdef DEBUG
+      printf("INFORMING OTHER PEERS THAT %s:%d IS UP\n", ip, port);
+    #endif
 
-  inform_add_peers(list, ip, port);
+    inform_add_peers(list, ip, port);
+  }
 
   add_peer_list(list, ip, port);
+
 
 }
 
@@ -605,6 +609,8 @@ int main(){
     }
   }
 
+  free_peer_list(list);
+  close(sock_fd);
   exit(0);
 
 }

@@ -24,10 +24,6 @@ int gallery_connect(char * host, in_port_t p){
 	int nbytes;
   char *pt;
   int sock_fd;
-  struct timeval tv;
-  tv.tv_sec = 2;
-  tv.tv_usec = 0;
-
 
 
   // CREATING SOCKET FOR CONNECTIONS
@@ -40,13 +36,6 @@ int gallery_connect(char * host, in_port_t p){
     perror("ERROR CREATING SOCKET\n");
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
-    #endif
-    return 0;
-  }
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
     #endif
     return 0;
   }
@@ -135,13 +124,6 @@ int gallery_connect(char * host, in_port_t p){
     perror("ERROR CREATING SOCKET\n");
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
-    #endif
-    return 0;
-  }
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
     #endif
     return 0;
   }
