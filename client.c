@@ -44,40 +44,134 @@ int main(int argc, char const *argv[]) {
   *name = (char*)malloc(100);
   uint32_t **ids = (uint32_t**)malloc(sizeof(uint32_t*));
   p=atoi(port);
-  int photo_id;
+  int photo_id1,photo_id2,photo_id3;
 
     psock = gallery_connect(host, p);
     if(psock>0){
-      photo_id = gallery_add_photo(psock, "5000.png");
+      photo_id1 = gallery_add_photo(psock, "5001.png");
     }
     getchar();
     psock = gallery_connect(host, p);
-
     if(psock>0){
-      gallery_get_photo_name(psock, photo_id, name);
+      photo_id2 = gallery_add_photo(psock, "5002.png");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      photo_id3 = gallery_add_photo(psock, "5003.png");
+    }
+
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_get_photo_name(psock, photo_id1, name);
+    }
+    printf("printing name:\n");
+    printf("name is %s\n", (*name));
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_get_photo_name(psock, photo_id1, name);
+    }
+    printf("printing name:\n");
+    printf("name is %s\n", (*name));
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_get_photo_name(psock, photo_id2, name);
+    }
+    printf("printing name:\n");
+    printf("name is %s\n", (*name));
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_get_photo_name(psock, photo_id3, name);
     }
     printf("printing name:\n");
     printf("name is %s\n", (*name));
     getchar();
 
     psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id1, "PRAIA");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id2, "PLANICIE");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id3, "PLANICIE");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id1, "TORRE");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id1, "MONTANHA");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id3, "MONTANHA");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id2, "MONTANHA");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id2, "TORRE");
+    }
+
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_search_photo(psock, "TORRE", ids);
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_search_photo(psock, "MONTANHA", ids);
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_search_photo(psock, "PRAIA", ids);
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      gallery_search_photo(psock, "PLANICIE", ids);
+    }
+
+    getchar();
+
+    psock = gallery_connect(host, p);
 
     if(psock>0){
-      gallery_add_keyword(psock, photo_id, "teste");
+      gallery_delete_photo(psock, photo_id1);
     }
     getchar();
 
     psock = gallery_connect(host, p);
 
     if(psock>0){
-      gallery_search_photo(psock, "teste", ids);
+      gallery_delete_photo(psock, photo_id2);
     }
     getchar();
 
     psock = gallery_connect(host, p);
 
     if(psock>0){
-      gallery_delete_photo(psock, photo_id);
+      gallery_delete_photo(psock, photo_id3);
     }
   close(psock);
   return 0;
