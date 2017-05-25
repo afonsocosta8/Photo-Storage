@@ -26,7 +26,7 @@ keyword_list *init_keyword_list(){
 
 void add_keyword_list(keyword_list *keys, char *key){
 
-  keyword *new = (keyword*)malloc(sizeof(keyword));
+  key_word *new = (key_word*)malloc(sizeof(key_word));
 
   strcpy(new->key, key);
   new->next = NULL;
@@ -37,7 +37,7 @@ void add_keyword_list(keyword_list *keys, char *key){
 
   }else{
 
-    keyword * aux;
+    key_word * aux;
     for(aux = keys->list; aux->next!=NULL; aux=aux->next);
     aux->next = new;
 
@@ -46,7 +46,7 @@ void add_keyword_list(keyword_list *keys, char *key){
 
 int search_keyword_list(keyword_list *list, char *word){
 
-  keyword*aux;
+  key_word*aux;
 
   if(list->list!=NULL)
     for(aux = list->list; aux != NULL; aux=aux->next)
@@ -60,7 +60,7 @@ int search_keyword_list(keyword_list *list, char *word){
 
 void print_keyword_list(keyword_list *list){
 
-  keyword *aux;
+  key_word *aux;
   int i;
 
   printf("\t\tDEBUG: KEYWORD LIST:\n");
@@ -74,7 +74,7 @@ void free_keyword_list(keyword_list *list){
 
   if(list->list!=NULL){
 
-    keyword *actual, *previous;
+    key_word *actual, *previous;
     actual = list->list;
     while(actual!=NULL){
       previous = actual;
