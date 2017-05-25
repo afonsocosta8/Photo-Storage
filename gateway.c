@@ -143,7 +143,8 @@ void * handle_get(void * arg){
   int test_peer_fd;
   char test_peer_query[10];
   struct sockaddr_in peer_addr;
-  socklen_t size_addr;
+
+  socklen_t size_addr = sizeof(peer_addr);;
   struct timeval tv;
   tv.tv_sec = 0;
   tv.tv_usec = 500000;
@@ -454,7 +455,7 @@ void * handle_ticket(void * arg){
 
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
-  socklen_t size_addr;
+  socklen_t size_addr = sizeof(client_addr);;
   int sock_fd;
   int nbytes;
   uint32_t photo_id=1;

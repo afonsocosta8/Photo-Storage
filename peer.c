@@ -74,7 +74,7 @@ uint32_t get_photoid(char * host){
   nbytes = sendto(sock_fd, get_photoid_query, strlen(get_photoid_query)+1, 0, (const struct sockaddr *) &gateway_addr, sizeof(gateway_addr));
   if(nbytes==-1){
     #ifdef DEBUG
-      printf("\t\tDEBUG: GATEWAY UNAVAILABLE WHEN RETRIE A NEW PHOTOID\n");
+      printf("\t\tDEBUG: GATEWAY UNAVAILABLE WHEN RETRIEVING A NEW PHOTOID\n");
     #endif
     return -1;
   }
@@ -728,10 +728,27 @@ int main(int argc, char const *argv[]) {
 
   // IN CASE THERE ARE ALREADY PEERS, I NEED TO TRANSFER FILES FROM THE OTHER PEER FRIST
   if(strcmp(get_peer_resp, "ERROR NO PEERS")!=0){
-    printf("RETRIEVING FILES FROM PEER\n");
-    // TRANSFER FILES FROM OTHER PEER
+    char ipport[30];
+    char code[5];
+    char *peer_ip;
+    int peer_port;
 
+    sscanf(get_peer_resp, "%s %s", code, ipport);
+    if(strcmp(code, "OK")==0){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: DECODED MESSAGE AS OK + PEER\n");
+      #endif
+
+      peer_ip = strtok(ipport,":");
+      peer_port = atoi(strtok(NULL,":"));
+
+      printf("RETRIEVING FILES FROM PEER %s:%d\n", peer_ip, peer_port);
+
+
+    }
   }
+
   #ifdef DEBUG
   else
     printf("NO PEERS AVAILABLE - REGISTERING PEER\n");
