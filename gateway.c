@@ -580,7 +580,7 @@ int main(){
   // CONNTECTION RELATED
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
-  socklen_t size_addr;
+  socklen_t size_addr = sizeof(client_addr);
   int sock_fd;
   int nbytes;
   char buff[100];
