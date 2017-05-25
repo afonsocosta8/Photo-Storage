@@ -41,9 +41,6 @@ typedef struct _header{
 uint32_t get_photoid(char * host){
 
   int sock_fd;
-  struct timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 500000;
   int nbytes;
 
   printf("CONTACTING GATEWAY TO GET A NEW PHOTO ID\n");
@@ -53,14 +50,6 @@ uint32_t get_photoid(char * host){
     perror("ERROR CREATING SOCKET\n");
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT CREATE SOCKET TO RETRIEVE PHOTOID\n");
-    #endif
-    return -1;
-  }
-
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT SET SOCKET OPTS FOR PHOTOID\n");
     #endif
     return -1;
   }
@@ -110,7 +99,7 @@ uint32_t get_photoid(char * host){
   uint32_t photoid;
   sscanf(get_gw_resp, "%s %d", gw_code, &photoid);
 
-
+  close(sock_fd);
   return photoid;
 
 
@@ -125,11 +114,10 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   printf("nome %s\n", photo_name);
   sprintf(towrite, "testimgend/%s", photo_name);
   FILE *img = fopen(towrite, "wb");
-  int nbytes;
   printf("size = %lu\n", filesize);
 
 
-  nbytes = recv(client_fd, buffer, filesize, 0);
+  recv(client_fd, buffer, filesize, 0);
 
   printf("received\n");
   int i;
@@ -146,13 +134,15 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 
   photo_id=get_photoid(host);
   add_photo_hash_table(table, photo_name, photo_id);
+
+  free(buffer);
+
   return photo_id;
 }
 
 int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   char buff[100];
-  int nbytes;
 
   // OPENING FILE
   #ifdef DEBUG
@@ -209,19 +199,21 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     close(client_fd);
     return 0;
   }
-  printf("ola\n");
+
+  free(buffer);
   return 1;
 }
-
 
 
 
 void * handle_client(void * arg){
   args_client *arguments = (args_client*)arg;
   char host[20];
+
   strcpy(host, arguments->host);
   photo_hash_table *table = arguments->table;
   int client_fd = arguments->client_fd;
+
   free(arguments);
   int nbytes;
   char client_query[100];
@@ -255,26 +247,81 @@ void * handle_client(void * arg){
     }
 
   }
-  /*else if(strstr(client_query, "ADDKEY") != NULL) {
-    char keyword[30];
+  else if(strstr(client_query, "ADDKEY") != NULL) {
+
+
+    char keyword[50];
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS ADD KEYWORD\n");
+    #endif
+
     uint32_t photo_id;
     sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
-    add_key(client_fd, photo_id, keyword);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d\n", keyword, photo_id);
+    #endif
+
+    if(add_keyword_photo_hash(table, photo_id, keyword)){
+      sprintf(buff, "OK");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
+      #endif
+
+    }else{
+      sprintf(buff, "ERROR");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+    }
+
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
+
   }else if(strstr(client_query, "SEARCH") != NULL) {
     char keyword[30];
     uint32_t *ids;
     sscanf(client_query, "%s %s", answer, keyword);
-    int num_ids = search(client_fd, keyword, ids);
-  }else if(strstr(client_query, "DELETE") != NULL) {
+    //int num_ids = search(client_fd, keyword, ids);
+  /*}else if(strstr(client_query, "DELETE") != NULL) {
     uint32_t photo_id;
     sscanf(client_query, "%s %d", answer, photo_id);
     delete_photo(client_fd, photo_id);
-  }else if(strstr(client_query, "GETNAME") != NULL) {
+  */}else if(strstr(client_query, "GETNAME") != NULL) {
+
     uint32_t photo_id;
-    char *name;
-    sscanf(client_query, "%s %d", answer, photo_id);
-    get_name(client_fd, photo_id, name);
-  }*/else if(strstr(client_query, "GETPHOTO") != NULL) {
+    char name[100];
+    sscanf(client_query, "%s %d", answer, &photo_id);
+
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: GETTING PHOTO'S %d NAME\n", photo_id);
+    #endif
+
+    if(get_photo_name_hash(table, photo_id, name)){
+      sprintf(buff, "OK %s", name);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: FOUND PHOTO - %s\n", name);
+      #endif
+    }else{
+      sprintf(buff, "ERROR");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+    }
+
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
+
+  }else if(strstr(client_query, "GETPHOTO") != NULL) {
     uint32_t photo_id;
     int res;
     sscanf(client_query, "%s %d", answer, &photo_id);
@@ -285,6 +332,8 @@ void * handle_client(void * arg){
       printf("replying %d bytes\n", nbytes);
     }
   }
+
+  close(client_fd);
   return;
 }
 
@@ -300,9 +349,6 @@ void * handle_alive(void * arg){
   int p,mp;
   brother_list * list;
   int sock_fd;
-  struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 0;
 
   #ifdef DEBUG
     printf("\t\tDEBUG: HELLO IM A NEW THREAD...\n");
@@ -333,14 +379,6 @@ void * handle_alive(void * arg){
     #endif
     exit(-1);
   }
-  //SETTING TIMEOUT ON SOCKET
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET TIMEOUT\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
-    #endif
-    exit(-1);
-  }
   #ifdef DEBUG
     printf("\t\tDEBUG: SOCKET %d CREATED\n", sock_fd);
   #endif
@@ -353,7 +391,7 @@ void * handle_alive(void * arg){
     printf("\t\tDEBUG: BINDING SOCKET\n");
   #endif
 	local_addr.sin_family = AF_INET;
-	local_addr.sin_port= (mp);
+	local_addr.sin_port= htons(mp);
 	local_addr.sin_addr.s_addr= INADDR_ANY;
 	int err = bind(sock_fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
 	if(err == -1) {
@@ -443,20 +481,6 @@ void * handle_alive(void * arg){
       #endif
     }
   }
-
-
-
-
-  // CHANGING PEER SOCKET RCV TIMEOUT TO ANSWER UALIVE CALLS
-  tv.tv_sec = 0;
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET TIMEOUT\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
-    #endif
-    exit(-1);
-  }
-
 
 
   // LISTENING TO UALIVE? QUERYS
@@ -761,10 +785,13 @@ int main(int argc, char const *argv[]) {
 
     fwrite(buffer,1,filesize,fp);
 
-    close(client_fd);
     printf("closing connectin with client\n");
     exit(0);
     */
   }
+
+  free_brother_list(brothers);
+  free_hash_table(photos);
+  close(sock_fd);
   exit(0);
 }

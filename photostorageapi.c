@@ -24,10 +24,6 @@ int gallery_connect(char * host, in_port_t p){
 	int nbytes;
   char *pt;
   int sock_fd;
-  struct timeval tv;
-  tv.tv_sec = 2;
-  tv.tv_usec = 0;
-
 
 
   // CREATING SOCKET FOR CONNECTIONS
@@ -40,13 +36,6 @@ int gallery_connect(char * host, in_port_t p){
     perror("ERROR CREATING SOCKET\n");
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
-    #endif
-    return 0;
-  }
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
     #endif
     return 0;
   }
@@ -138,13 +127,6 @@ int gallery_connect(char * host, in_port_t p){
     #endif
     return 0;
   }
-  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0){
-    perror("ERROR SETTING SOCKET OPTS\n");
-    #ifdef DEBUG
-      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
-    #endif
-    return 0;
-  }
   #ifdef DEBUG
     printf("\tDEBUG: TCP SOCKET %d CREATED\n", sock_fd);
   #endif
@@ -190,10 +172,21 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     return 0;
 
 
+  // OPENING FILE
+  #ifdef DEBUG
+    printf("\tDEBUG: GETTING FILE CHARACTERISTICS\n");
+  #endif
+
+
+
   // GET FILE CHARECTERISTICS
   fseek(img, 0, SEEK_END);
   size_t filesize = ftell(img);
   fseek(img, 0, SEEK_SET);
+
+  #ifdef DEBUG
+    printf("\tDEBUG: FINISHED GETTING FILE CHARECTERISTICS\n");
+  #endif
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER

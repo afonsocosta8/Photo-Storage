@@ -12,6 +12,7 @@ typedef struct _peerlist{
   int total;
   peer *next_to_use;
   peer *beginning;
+  pthread_mutex_t lock;
 
 }peer_list;
 
@@ -20,6 +21,7 @@ typedef struct _brotherlist{
   int total;
   peer *last;
   peer *first;
+  pthread_mutex_t lock;
 
 }brother_list;
 
