@@ -112,7 +112,7 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   char towrite[100];
   uint32_t photo_id;
   printf("nome %s\n", photo_name);
-  sprintf(towrite, "testimgend/%s", photo_name);
+  sprintf(towrite, "%s", photo_name);
   FILE *img = fopen(towrite, "wb");
   printf("size = %lu\n", filesize);
 
@@ -156,7 +156,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     return -1;
   }
   printf("name of photo to get: %s\n", photo_name);
-  sprintf(file_name, "testimgend/%s", photo_name);
+  sprintf(file_name, "%s", photo_name);
 
   FILE *img = fopen(file_name, "rb");
   if(img == NULL)
