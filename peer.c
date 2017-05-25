@@ -319,7 +319,28 @@ void * handle_client(void * arg){
   }else if(strstr(client_query, "DELETE") != NULL) {
     uint32_t photo_id;
     sscanf(client_query, "%s %d", answer, &photo_id);
-    delete_image(client_fd, photo_id, table);
+    int res = delete_image(client_fd, photo_id, table);
+    if(res==-1){
+      sprintf(buff, "ERROR");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+    }else{
+      sprintf(buff, "OK");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: DELETED\n");
+      #endif
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+    }
   }else if(strstr(client_query, "GETNAME") != NULL) {
 
     uint32_t photo_id;
