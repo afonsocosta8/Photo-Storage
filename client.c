@@ -46,9 +46,7 @@ int main(int argc, char const *argv[]) {
   printf("connected to peer\n");
   int photo_id;
   if(psock>0)
-    //gallery_add_photo(psock, "testimg/5000.png");
-
-    gallery_delete_photo(psock, 3);
+    photo_id = gallery_add_photo(psock, "5000.png");
 
   close(psock);
   return 0;
