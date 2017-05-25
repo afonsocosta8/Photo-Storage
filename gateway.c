@@ -442,7 +442,7 @@ void * handle_ticket(void * arg){
   // CREATING SOCKET TO RECV MESSAGES
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock_fd == -1){
-    perror("ERROR CREATING TICKET  SOCKET\n");
+    perror("ERROR CREATING TICKET SOCKET\n");
     exit(-1);
   }
   #ifdef DEBUG
@@ -474,6 +474,7 @@ void * handle_ticket(void * arg){
 
     if(nbytes>0){
       if(strcmp(recvd_message, "GET PEER")==0){
+        
         #ifdef DEBUG
           printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
         #endif
