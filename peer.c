@@ -140,6 +140,35 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   return photo_id;
 }
 
+uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table){
+
+  char photo_name[100], file_name[110];
+  int ret;
+  printf("id=%d\n", photo_id);
+  print_photo_hash(table);
+  if(get_photo_name_hash(table, photo_id, photo_name)==0){
+    return -1;
+  }
+  printf("ola\n");
+  sprintf(file_name, "testimgend/%s", photo_name);
+
+  ret = remove(file_name);
+
+  if(ret == 0){
+    int r = delete_photo_hash(table, photo_id);
+    if(r!=1)
+      printf("still in the database\n");
+    printf("File deleted successfully\n");
+    return 1;
+  }
+  else{
+    printf("Error: unable to delete the file\n");
+    return -1;
+  }
+
+
+}
+
 int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   char buff[100];
@@ -150,19 +179,20 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   #endif
 
   char photo_name[100], file_name[110];
-  printf("ola\n");
-  print_photo_hash(table);
   if(get_photo_name_hash(table, photo_id, photo_name)==0){
     return -1;
   }
-  printf("name of photo to get: %s\n", photo_name);
+
+  #ifdef DEBUG
+    printf("DEBUG: GETTING PHOTO NAME: %s\n", photo_name);
+  #endif
+
   sprintf(file_name, "%s", photo_name);
 
   FILE *img = fopen(file_name, "rb");
   if(img == NULL)
     return 0;
 
-  printf("ola\n");
 
   // GET FILE CHARECTERISTICS
   fseek(img, 0, SEEK_END);
@@ -183,7 +213,6 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     close(client_fd);
     return 0;
   }
-  printf("ola\n");
   #ifdef DEBUG
     printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
   #endif
@@ -287,11 +316,11 @@ void * handle_client(void * arg){
     uint32_t *ids;
     sscanf(client_query, "%s %s", answer, keyword);
     //int num_ids = search(client_fd, keyword, ids);
-  /*}else if(strstr(client_query, "DELETE") != NULL) {
+  }else if(strstr(client_query, "DELETE") != NULL) {
     uint32_t photo_id;
-    sscanf(client_query, "%s %d", answer, photo_id);
-    delete_photo(client_fd, photo_id);
-  */}else if(strstr(client_query, "GETNAME") != NULL) {
+    sscanf(client_query, "%s %d", answer, &photo_id);
+    delete_image(client_fd, photo_id, table);
+  }else if(strstr(client_query, "GETNAME") != NULL) {
 
     uint32_t photo_id;
     char name[100];
