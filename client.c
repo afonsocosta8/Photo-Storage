@@ -40,14 +40,36 @@ int main(int argc, char const *argv[]) {
               }
       }
   }
+  char **name;
   p=atoi(port);
   printf("connecting to peer\n");
-  psock = gallery_connect(host, p);
   printf("connected to peer\n");
   int photo_id;
-  if(psock>0)
-    photo_id = gallery_add_photo(psock, "5000.png");
 
+    psock = gallery_connect(host, p);
+    if(psock>0){
+      photo_id = gallery_add_photo(psock, "5000.png");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+
+    if(psock>0){
+      gallery_get_photo_name(psock, photo_id, name);
+    }
+    printf("printing name:\n");
+    printf("%s\n", *name);
+    getchar();
+    psock = gallery_connect(host, p);
+
+    if(psock>0){
+      gallery_add_keyword(psock, photo_id, "teste");
+    }
+    getchar();
+    psock = gallery_connect(host, p);
+
+    if(psock>0){
+      gallery_delete_photo(psock, photo_id);
+    }
   close(psock);
   return 0;
 }

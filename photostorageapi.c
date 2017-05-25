@@ -606,11 +606,16 @@ int gallery_get_photo_name(int peer_socket, uint32_t id_photo, char **photo_name
     if(strcmp(answer, "OK")==0){
 
       #ifdef DEBUG
-        printf("\tDEBUG: PHOTO NOT FOUND\n");
+        printf("\tDEBUG: PHOTO FOUND: %s\n", name);
       #endif
+
       ret_name = (char*)malloc(sizeof(name));
       strcpy(ret_name, name);
       photo_name = &ret_name;
+
+      #ifdef DEBUG
+        printf("\tDEBUG: CLOSING SOCKET. RETURNING %s\n", *photo_name);
+      #endif
       close(peer_socket);
       return 1;
 

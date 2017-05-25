@@ -709,7 +709,7 @@ void free_brother_list(brother_list *list){
 // BROTHER LIST TESTS
 
 
-
+/*
 int main(){
 
   brother_list * list = init_brother_list();
@@ -772,4 +772,4 @@ int main(){
   printf("FREEING BROTHER LIST\n");
   free_brother_list(list);
 
-}
+}*/

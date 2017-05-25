@@ -142,7 +142,7 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 
 uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
-  char photo_name[100], file_name[110];
+  char photo_name[100];
   int ret;
   printf("id=%d\n", photo_id);
   print_photo_hash(table);
@@ -150,9 +150,8 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
     return -1;
   }
   printf("ola\n");
-  sprintf(file_name, "testimgend/%s", photo_name);
 
-  ret = remove(file_name);
+  ret = remove(photo_name);
 
   if(ret == 0){
     int r = delete_photo_hash(table, photo_id);
@@ -295,6 +294,7 @@ void * handle_client(void * arg){
       sprintf(buff, "OK");
       #ifdef DEBUG
         printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
+        print_photo_hash(table);
       #endif
 
     }else{
