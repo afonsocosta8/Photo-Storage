@@ -481,46 +481,87 @@ char** get_all_peers(peer_list *list, int* total){
 }
 
 int remove_peer(peer_list *list, char *ip, int port){
+
   pthread_mutex_lock(&(list->lock));
   peer *actual;
   peer *previous;
+
   if(list->beginning!=NULL){
 
+    #ifdef DEBUG
+      printf("\t\t\tDEBUG: IS PEER ON THE BEGINING OF THE LIST?\n");
+    #endif
     actual = list->beginning;
+
     if(strcmp(ip, actual->ip)==0 && port==actual->port){
+
+      #ifdef DEBUG
+        printf("\t\t\tDEBUG: PEER IS ON THE BEGINING OF THE LIST\n");
+      #endif
+
       peer* last;
 
+      #ifdef DEBUG
+        printf("\t\t\tDEBUG: GETTING LAST ELEMENT OF THE LIST\n");
+      #endif
       // find last element on the list
       for(last = list->beginning; last->next != list->beginning; last=last->next);
       // if last == begining, then there is only one element on the list, put beginning pointing to NULL
+
+
       if(last == list->beginning){
+        #ifdef DEBUG
+          printf("\t\t\tDEBUG: LAST ELEMENT AND FIRST ELEMENT ARE EQUAL\n");
+        #endif
         list->beginning = NULL;
         list->next_to_use = NULL;
       }else{
         // put the begining and last element of the list pointing to the second element of the list
+
+        #ifdef DEBUG
+          printf("\t\t\tDEBUG: PUTTING LAST ELEMENT AND BEGINNING POINTING TO 2ND ELEMENT OF THE LIST \n");
+        #endif
         last->next = list->beginning = actual->next;
       }
+
       // free element we want to remove
       free(actual);
       list->total--;
+      #ifdef DEBUG
+        printf("\t\t\tDEBUG: DONE. TOTAL ELEMENTS NOW: %d\n", list->total);
+      #endif
       pthread_mutex_unlock(&(list->lock));
       return 1;
 
-    }else{
-
-      for(actual = list->beginning->next; actual != list->beginning && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
+    }
+    else{
+      #ifdef DEBUG
+        printf("\t\t\tDEBUG: NO. FINDING ELEMENT ON THE LIST \n");
+      #endif
+      for(previous = list->beginning, actual = list->beginning->next; actual != list->beginning && !(strcmp(ip, actual->ip)==0 && port==actual->port);  previous = actual, actual=actual->next);
 
       if(actual != list->beginning){
-
+        #ifdef DEBUG
+          printf("\t\t\tDEBUG: HANDLING POINTERS\n");
+        #endif
         previous->next = actual->next;
+        #ifdef DEBUG
+          printf("\t\t\tDEBUG: REMOVING IT\n");
+        #endif
         free(actual);
         list->total--;
+        #ifdef DEBUG
+          printf("\t\t\tDEBUG: DONE. TOTAL ELEMENTS NOW: %d\n", list->total);
+        #endif
         pthread_mutex_unlock(&(list->lock));
         return 1;
 
       }
     }
   }
+  #ifdef DEBUG
+    printf("\t\t\tDEBUG: ELEMENT NOT FOUND\n");
+  #endif
   pthread_mutex_unlock(&(list->lock));
   return 0;
 }
@@ -613,7 +654,7 @@ int remove_brother(brother_list *list, char *ip, int port){
     #ifdef DEBUG
       printf("\t\t\t\tDEBUG: SEARCHING FOR BROTHER\n");
     #endif
-    for(actual = list->first; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
+    for(actual = list->first->next; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
 
     if(actual != NULL){
       // first case: we want to remove the node that is the first of the list
