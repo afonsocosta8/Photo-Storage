@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <string.h>
 
 #include "data_structs.h"
 
@@ -232,7 +233,27 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   return 1;
 }
 
-
+int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_table *table){
+  int num_ids = 1;
+  char id[20];
+  photo *aux;
+  key_word *aux1;
+  int i, j;
+  for(i=0; i<table->size; i++){
+    if(table->table[i]->list!=NULL)
+      for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
+        if(aux->keywords->list!=NULL)
+          for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++)
+            if (strcmp(aux1->key, keyword)) {
+              itoa(aux->id, id, 10);
+              add_keyword_list(ids_list, id);
+              break;
+            }
+      }
+  }
+  print_keyword_list(ids_list);
+  return num_ids;
+}
 
 void * handle_client(void * arg){
   args_client *arguments = (args_client*)arg;
@@ -313,13 +334,34 @@ void * handle_client(void * arg){
 
   }else if(strstr(client_query, "SEARCH") != NULL) {
     char keyword[30];
-    uint32_t *ids;
+    keyword_list *ids_list = init_keyword_list();
     sscanf(client_query, "%s %s", answer, keyword);
-    //int num_ids = search(client_fd, keyword, ids);
+    int num_ids = search_ids(client_fd, keyword, ids_list, table);
   }else if(strstr(client_query, "DELETE") != NULL) {
     uint32_t photo_id;
     sscanf(client_query, "%s %d", answer, &photo_id);
-    delete_image(client_fd, photo_id, table);
+    int res = delete_image(client_fd, photo_id, table);
+    if(res==-1){
+      sprintf(buff, "ERROR");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+    }else{
+      sprintf(buff, "OK");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: DELETED\n");
+      #endif
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+    }
   }else if(strstr(client_query, "GETNAME") != NULL) {
 
     uint32_t photo_id;

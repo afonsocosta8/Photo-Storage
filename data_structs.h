@@ -27,17 +27,17 @@ typedef struct _brotherlist{
 
 
 
-typedef struct _keyword{
+typedef struct _key_word{
 
   char key[100];
-  struct _keyword *next;
+  struct _key_word *next;
 
-}keyword;
+}key_word;
 
 
 typedef struct _keywordlist{
 
-  keyword *list;
+  key_word *list;
 
 }keyword_list;
 
@@ -104,6 +104,8 @@ void free_brother_list(brother_list *list);
 
 // PHOTO LISTS
 
+keyword_list *init_keyword_list();
+
 photo_hash_table * create_hash_table(int size);
 
 void free_hash_table(photo_hash_table *table);
@@ -112,8 +114,12 @@ void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id);
 
 int delete_photo_hash(photo_hash_table *table, uint32_t id);
 
+void add_keyword_list(keyword_list *keys, char *key);
+
 int add_keyword_photo_hash(photo_hash_table *table, uint32_t id, char *keyword);
 
 int get_photo_name_hash(photo_hash_table *table, uint32_t id, char *name);
+
+void print_keyword_list(keyword_list *list);
 
 void print_photo_hash(photo_hash_table *table);

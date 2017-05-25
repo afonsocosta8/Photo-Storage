@@ -20,7 +20,9 @@ typedef struct _args{
 typedef struct _args_remv_peer{
 
   char ip[20];
+  char ip_frm[20];
   int port;
+  int port_frm;
   peer_list * list;
 
 }args_remv_peer;
@@ -28,11 +30,13 @@ typedef struct _args_remv_peer{
 void * inform_remove_peers(void * input){
 
   args_remv_peer * args = (args_remv_peer*)input;
-  char ip[20];
-  int port;
+  char ip[20], ip_frm[20];
+  int port, port_frm;
   peer_list *list = args->list;
   strcpy(ip, args->ip);
   port = args->port;
+  strcpy(ip_frm, args->ip_frm);
+  port_frm = args->port_frm;
   free(args);
 
 
@@ -47,65 +51,76 @@ void * inform_remove_peers(void * input){
 
   for(i = 0; i<total; i++){
 
+
     sscanf(peers[i], "%s %d", peer_ip, &peer_port);
-    #ifdef DEBUG
-      printf("\t DEBUG: INFORMING %s %d OF %s:%d DEATH\n", peer_ip, peer_port, ip, port);
-    #endif
 
-    // CREATING SOCKET TO SEND MESSAGE
-    #ifdef DEBUG
-      printf("\tDEBUG: CREATING SOCKET...\n");
-    #endif
-    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sock_fd == -1){
-      perror("ERROR CREATING SOCKER\n");
-      exit(-1);
-    }
-
-    // PREPARING TO SEND MESSAGE TO GATEWAY
-    #ifdef DEBUG
-      printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
-    #endif
-    peer_addr.sin_family = AF_INET;
-    peer_addr.sin_port = htons(peer_port);
-    inet_aton(peer_ip, &peer_addr.sin_addr);
-    sprintf(buff, "RMV %s %d", ip, port);
-
-    nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
-    #ifdef DEBUG
-      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
-    #endif
-    if(nbytes==-1){
+    if(!(peer_port == port_frm && strcmp(ip_frm, peer_ip)==0)){
       #ifdef DEBUG
-        printf("\tDEBUG: MESSAGE NOT SENT\n");
+        printf("\t DEBUG: INFORMING %s %d OF %s:%d DEATH\n", peer_ip, peer_port, ip, port);
       #endif
+
+      // CREATING SOCKET TO SEND MESSAGE
+      #ifdef DEBUG
+        printf("\tDEBUG: CREATING SOCKET...\n");
+      #endif
+      sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+      if(sock_fd == -1){
+        perror("ERROR CREATING SOCKER\n");
+        exit(-1);
+      }
+
+      // PREPARING TO SEND MESSAGE TO GATEWAY
+      #ifdef DEBUG
+        printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+      #endif
+      peer_addr.sin_family = AF_INET;
+      peer_addr.sin_port = htons(peer_port);
+      inet_aton(peer_ip, &peer_addr.sin_addr);
+      sprintf(buff, "RMV %s %d", ip, port);
+
+      nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
+      }
+
+      close(sock_fd);
+      free(peers[i]);
     }
-
-
-    close(sock_fd);
-    free(peers[i]);
   }
 
-  free(peers);
-  return;
-
+    free(peers);
+    return;
 }
 
 
-void remove_peer_list(peer_list *list,char* ip, int port){
+void remove_peer_list(peer_list *list, char *ip, int port, char *ip_frm, int port_frm){
 
+  #ifdef DEBUG
+    printf("\t\tDEBUG: TRYING TO REMOVE PEER...\n");
+  #endif
   // REMOVING PEER FROM PEER LIST
   if(remove_peer(list, ip, port)){
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: REMOVED PEER FROM PEER LIST, PROPAGATING TO OTHER PEERS NOW\n");
+    #endif
 
     // INFORMING OTHER PEERS TO REMOVE THAT PEER
     args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
     strcpy(args->ip, ip);
     args->port = port;
     args->list = list;
+    strcpy(args->ip_frm, ip_frm);
+    args->port_frm = port_frm;
 
     pthread_t thr_id;
     #ifdef DEBUG
-      printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
+      printf("DEBUG: CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
     #endif
 
     if(pthread_create(&thr_id, NULL, inform_remove_peers, args)!=0){
@@ -113,6 +128,10 @@ void remove_peer_list(peer_list *list,char* ip, int port){
       exit(-1);
     }
   }
+  #ifdef DEBUG
+    else
+      printf("DEBUG: NO PEER FOUND TO REMOVE\n");
+  #endif
 
 }
 
@@ -212,11 +231,12 @@ void * handle_get(void * arg){
           #endif
 
           // PEER NOT ALIVE... NEED TO RETRIEVE ANOTHER PEER FROM PEER LIST AND REMV THIS ONE
-          remove_peer_list(list, ip, port);
+          remove_peer_list(list, ip, port, "NULL", -1);
 
-          print_peer_list(list);
+
 
           #ifdef DEBUG
+            print_peer_list(list);
             printf("\t\tRETRIEVING ANOTHER PEER...\n");
           #endif
 
@@ -229,10 +249,11 @@ void * handle_get(void * arg){
         #endif
 
         // PEER NOT ALIVE... NEED TO RETRIEVE ANOTHER PEER FROM PEER LIST AND REMV THIS ONE
-        remove_peer_list(list, ip, port);
-        print_peer_list(list);
+        remove_peer_list(list, ip, port, "NULL", -1);
+
 
         #ifdef DEBUG
+          print_peer_list(list);
           printf("\t\tRETRIEVING ANOTHER PEER...\n");
         #endif
 
@@ -529,6 +550,16 @@ void * handle_ticket(void * arg){
           exit(-1);
         }
       }else{
+        char code[10];
+        char ip[25];
+        int port;
+        sscanf(recvd_message, "%s %s %d", code, ip, &port);
+        if(strcmp(code, "RMV")==0){
+          #ifdef DEBUG
+            printf("\tDEBUG: DECODED AS REMOVE PEER %s %d, FROM %s %d\n", ip, port, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+          #endif
+          remove_peer_list(list, ip, port, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        }
         #ifdef DEBUG
           printf("\tDEBUG: COULD NOT DECODE MESSAGE REQUEST\n");
         #endif
