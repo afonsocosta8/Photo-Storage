@@ -67,12 +67,12 @@ int main(int argc, char const *argv[]) {
     }
     getchar();
 
-    /*psock = gallery_connect(host, p);
+    psock = gallery_connect(host, p);
 
     if(psock>0){
       gallery_search_photo(psock, "teste", ids);
     }
-    getchar();*/
+    getchar();
 
     psock = gallery_connect(host, p);
 

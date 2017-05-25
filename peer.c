@@ -233,7 +233,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 }
 
 int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_table *table){
-  int num_ids = 1;
+  int num_ids = 0;
   char id[20];
   photo *aux;
   key_word *aux1;
@@ -242,12 +242,15 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
     if(table->table[i]->list!=NULL)
       for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
         if(aux->keywords->list!=NULL)
-          for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++)
-            if (strcmp(aux1->key, keyword)) {
+          for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
+            printf("im here comparing %s with %s\n", aux1->key, keyword);
+            if (strcmp(aux1->key, keyword)==0) {
               sprintf(id, "%d", aux->id);
               add_keyword_list(ids_list, id);
+              num_ids = num_ids + 1;
               break;
             }
+          }
       }
   }
   print_keyword_list(ids_list);
@@ -337,6 +340,37 @@ void * handle_client(void * arg){
     keyword_list *ids_list = init_keyword_list();
     sscanf(client_query, "%s %s", answer, keyword);
     int num_ids = search_ids(client_fd, keyword, ids_list, table);
+    if(num_ids==0){
+
+      sprintf(buff, "NO PHOTOS");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT FOUND PHOTO ID\n");
+      #endif
+      nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+
+    }else{
+      char * buffer = malloc(12*num_ids);
+      key_word *aux;
+      sprintf(buffer, "OK ");
+      if(ids_list->list!=NULL){
+        for(aux=ids_list->list; aux!=NULL; aux=aux->next){
+          sprintf(buffer+strlen(buffer), "%s ", aux->key);
+        }
+      }
+      free_keyword_list(ids_list);
+
+      nbytes = send(client_fd, buffer, strlen(buffer)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buffer);
+      #endif
+
+
+    }
 
   }else if(strstr(client_query, "DELETE") != NULL) {
 

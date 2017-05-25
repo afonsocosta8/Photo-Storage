@@ -110,6 +110,8 @@ photo_hash_table * create_hash_table(int size);
 
 void free_hash_table(photo_hash_table *table);
 
+void free_keyword_list(keyword_list *list);
+
 void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id);
 
 int delete_photo_hash(photo_hash_table *table, uint32_t id);
