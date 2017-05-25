@@ -654,7 +654,7 @@ int remove_brother(brother_list *list, char *ip, int port){
     #ifdef DEBUG
       printf("\t\t\t\tDEBUG: SEARCHING FOR BROTHER\n");
     #endif
-    for(actual = list->first->next; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
+    for(actual = list->first; actual != NULL && !(strcmp(ip, actual->ip)==0 && port==actual->port) ;  previous = actual, actual=actual->next);
 
     if(actual != NULL){
       // first case: we want to remove the node that is the first of the list
