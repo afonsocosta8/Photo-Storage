@@ -40,10 +40,9 @@ int main(int argc, char const *argv[]) {
               }
       }
   }
-  char **name;
+  char **name = (char **)malloc(sizeof(char*));
+  *name = (char*)malloc(100);
   p=atoi(port);
-  printf("connecting to peer\n");
-  printf("connected to peer\n");
   int photo_id;
 
     psock = gallery_connect(host, p);
@@ -57,7 +56,7 @@ int main(int argc, char const *argv[]) {
       gallery_get_photo_name(psock, photo_id, name);
     }
     printf("printing name:\n");
-    printf("%s\n", *name);
+    printf("name is %s\n", (*name));
     getchar();
     psock = gallery_connect(host, p);
 
