@@ -40,8 +40,9 @@ int main(int argc, char const *argv[]) {
               }
       }
   }
-  char **name = (char **)malloc(sizeof(char*));
+  char **name = (char**)malloc(sizeof(char*));
   *name = (char*)malloc(100);
+  uint32_t **ids = (uint32_t**)malloc(sizeof(uint32_t*));
   p=atoi(port);
   int photo_id;
 
@@ -58,12 +59,21 @@ int main(int argc, char const *argv[]) {
     printf("printing name:\n");
     printf("name is %s\n", (*name));
     getchar();
+
     psock = gallery_connect(host, p);
 
     if(psock>0){
       gallery_add_keyword(psock, photo_id, "teste");
     }
     getchar();
+
+    /*psock = gallery_connect(host, p);
+
+    if(psock>0){
+      gallery_search_photo(psock, "teste", ids);
+    }
+    getchar();*/
+
     psock = gallery_connect(host, p);
 
     if(psock>0){

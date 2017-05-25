@@ -150,7 +150,6 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
   if(get_photo_name_hash(table, photo_id, photo_name)==0){
     return -1;
   }
-  printf("ola\n");
 
   ret = remove(photo_name);
 
@@ -245,7 +244,7 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
         if(aux->keywords->list!=NULL)
           for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++)
             if (strcmp(aux1->key, keyword)) {
-              itoa(aux->id, id, 10);
+              sprintf(id, "%d", aux->id);
               add_keyword_list(ids_list, id);
               break;
             }
