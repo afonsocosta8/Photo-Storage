@@ -82,7 +82,7 @@ int get_peer(peer_list *list, char *ip, int *port);
 
 char **get_all_peers(peer_list *list, int* total);
 
-void remove_peer(peer_list *list, char *ip, int port);
+int remove_peer(peer_list *list, char *ip, int port);
 
 void free_peer_list(peer_list *list);
 
@@ -97,7 +97,7 @@ void print_brother_list(brother_list *list);
 
 char **get_all_brothers(brother_list * list, int *total);
 
-void remove_brother(brother_list *list, char *ip, int port);
+int remove_brother(brother_list *list, char *ip, int port);
 
 void free_brother_list(brother_list *list);
 

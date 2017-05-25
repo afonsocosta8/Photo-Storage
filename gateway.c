@@ -95,22 +95,23 @@ void * inform_remove_peers(void * input){
 void remove_peer_list(peer_list *list,char* ip, int port){
 
   // REMOVING PEER FROM PEER LIST
-  remove_peer(list, ip, port);
+  if(remove_peer(list, ip, port)){
 
-  // INFORMING OTHER PEERS TO REMOVE THAT PEER
-  args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
-  strcpy(args->ip, ip);
-  args->port = port;
-  args->list = list;
+    // INFORMING OTHER PEERS TO REMOVE THAT PEER
+    args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
+    strcpy(args->ip, ip);
+    args->port = port;
+    args->list = list;
 
-  pthread_t thr_id;
-  #ifdef DEBUG
-    printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
-  #endif
+    pthread_t thr_id;
+    #ifdef DEBUG
+      printf("CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
+    #endif
 
-  if(pthread_create(&thr_id, NULL, inform_remove_peers, args)!=0){
-    printf("ERROR CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
-    exit(-1);
+    if(pthread_create(&thr_id, NULL, inform_remove_peers, args)!=0){
+      printf("ERROR CREATING THREAD TO INFORM OTHER PEERS THAT %s:%d DIED\n", ip, port);
+      exit(-1);
+    }
   }
 
 }
@@ -474,7 +475,7 @@ void * handle_ticket(void * arg){
 
     if(nbytes>0){
       if(strcmp(recvd_message, "GET PEER")==0){
-        
+
         #ifdef DEBUG
           printf("\tDEBUG: DECODED AS GET PEER\n\tDEBUG: CREATING THREAD FOR CLIENT...\n");
         #endif
