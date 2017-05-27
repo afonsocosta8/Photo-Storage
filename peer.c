@@ -666,6 +666,10 @@ void * handle_client(void * arg){
           #ifdef DEBUG
             printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
           #endif
+          nbytes = recv(client_fd, buff, 3, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+          #endif
           if(aux->keywords->total!=0){
             sprintf(buff, "KEYS");
             if(aux->keywords->list!=NULL)
@@ -673,6 +677,13 @@ void * handle_client(void * arg){
                 sprintf(buff, "%s %s", buff, aux1->key);
               }
             nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+            #ifdef DEBUG
+              printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+            #endif
+            nbytes = recv(client_fd, buff, 3, 0);
+            #ifdef DEBUG
+              printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+            #endif
           }
           #ifdef DEBUG
             printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
