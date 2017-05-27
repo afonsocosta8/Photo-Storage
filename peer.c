@@ -400,9 +400,9 @@ void * handle_client(void * arg){
           exit(-1);
         }
 
-        // PREPARING TO SEND MESSAGE TO GATEWAY
+        // PREPARING TO SEND MESSAGE TO BROTHER
         #ifdef DEBUG
-          printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+          printf("\tDEBUG: PREPARING MESSAGE TO BROTHER\n");
         #endif
         brother_addr.sin_family = AF_INET;
         brother_addr.sin_port = htons(brother_port);
@@ -436,41 +436,42 @@ void * handle_client(void * arg){
             #endif
           }
 
-      	}
+      	}else{
 
-        sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
+          sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
 
-        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
-        #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
-        #endif
-        if(nbytes==-1){
+          nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
-            printf("\tDEBUG: MESSAGE NOT SENT\n");
+            printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
           #endif
-
-          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
-          if(gw_sock == -1){
-            perror("ERROR CREATING SOCKER\n");
-            exit(-1);
-          }
-
-          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
-          gw_address.sin_family = AF_INET;
-          gw_address.sin_port = htons(9002);
-          inet_aton(host, &gw_address.sin_addr);
-          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
-
-          #ifdef DEBUG
-            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
-          #endif
-
           if(nbytes==-1){
             #ifdef DEBUG
               printf("\tDEBUG: MESSAGE NOT SENT\n");
             #endif
-          }
 
+            gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+            if(gw_sock == -1){
+              perror("ERROR CREATING SOCKER\n");
+              exit(-1);
+            }
+
+            sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+            gw_address.sin_family = AF_INET;
+            gw_address.sin_port = htons(9002);
+            inet_aton(host, &gw_address.sin_addr);
+            nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
+
+            #ifdef DEBUG
+              printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+            #endif
+
+            if(nbytes==-1){
+              #ifdef DEBUG
+                printf("\tDEBUG: MESSAGE NOT SENT\n");
+              #endif
+            }
+
+          }
         }
 
         close(brother_sock);
