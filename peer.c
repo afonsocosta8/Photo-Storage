@@ -108,6 +108,46 @@ uint32_t get_photoid(char * host){
 
 }
 
+void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize){
+
+  unsigned char *buffer = malloc(filesize);
+  unsigned char auxbuffer[1000];
+  char towrite[100];
+  int rcv_size=0;
+  int act_rcv_size = 0;
+  int k = 0;
+  int i;
+  int j = 0;
+
+  while(rcv_size < filesize-1000){
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    rcv_size=act_rcv_size+rcv_size;
+    j=0;
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+    k++;
+  }
+  if(rcv_size!=filesize){
+    j=0;
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+  }
+
+
+  sprintf(towrite, "%u", photo_id);
+  FILE *img = fopen(towrite, "wb");
+
+  fwrite(buffer,1,filesize,img);
+
+  fclose(img);
+  free(buffer);
+}
+
 uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
 
   unsigned char *buffer = malloc(filesize);
@@ -1111,6 +1151,23 @@ int main(int argc, char const *argv[]) {
         printf("ERROR ON RECEIVING FROM BROTHER\n");
         exit(-1);
       }
+
+
+
+      sprintf(query, "OK");
+      nbytes = send(brother_sock, query, strlen(query)+1, 0);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
+      }
+
+
+
+
       for(i=0; i<num_photos; i++){
 
         #ifdef DEBUG
@@ -1138,6 +1195,23 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: ADDED A PHOTO TO PHOTO LIST\n");
           print_photo_hash(photos);
         #endif
+
+
+
+        sprintf(query, "OK");
+        nbytes = send(brother_sock, query, strlen(query)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+
+
+
         if(num_keys != 0){
 
           keys = (char *)malloc(sizeof(char)*22*num_keys);
@@ -1165,6 +1239,30 @@ int main(int argc, char const *argv[]) {
 
         }
         free(keys);
+
+        sprintf(query, "OK");
+        nbytes = send(brother_sock, query, strlen(query)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+        add_image_brother(brother_sock, id, file_size);
+
+        sprintf(query, "OK");
+        nbytes = send(brother_sock, query, strlen(query)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
       }
       close(brother_sock);
     }
