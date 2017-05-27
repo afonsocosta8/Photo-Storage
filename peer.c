@@ -260,7 +260,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
   #endif
 
-  if(send(client_fd, buff, sizeof(buff), 0)==-1){
+  if(send(client_fd, buff, strlen(buff)+1, 0)==-1){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
     #endif
@@ -476,14 +476,16 @@ void * handle_client(void * arg){
         close(brother_sock);
         free(brothers[i]);
 
-        sprintf(buff, "OK");
-        #ifdef DEBUG
-          printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
-          print_photo_hash(table);
-        #endif
-
       }
-      free(brothers);
+      if(total!=0){
+        free(brothers);
+      }
+
+      sprintf(buff, "OK");
+      #ifdef DEBUG
+        printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
+        print_photo_hash(table);
+      #endif
 
 
 
@@ -614,8 +616,9 @@ void * handle_client(void * arg){
         free(brothers[i]);
 
       }
-
-      free(brothers);
+      if(total!=0){
+        free(brothers);
+      }
 
       sprintf(buff, "OK");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
