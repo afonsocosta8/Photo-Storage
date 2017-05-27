@@ -701,11 +701,34 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   FILE *img = fopen(photo_name, "wb");
   unsigned char *buffer = malloc(filesize);
+  unsigned char auxbuffer[1000];
+  int i,j,k;
+  k=0;
+  int rcv_size, act_rcv_size;
+  rcv_size=act_rcv_size=0;
+  //nbytes = recv(peer_socket, buffer, filesize, 0);
 
-  nbytes = recv(peer_socket, buffer, filesize, 0);
+  while(rcv_size < filesize-1000){
+    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
+    rcv_size=act_rcv_size+rcv_size;
+    j=0;
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+    k++;
+  }
+  if(rcv_size!=filesize){
+    j=0;
+    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+  }
+
 
   fwrite(buffer,1,filesize,img);
-
   fclose(img);
 
   close(peer_socket);

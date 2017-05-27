@@ -110,34 +110,43 @@ uint32_t get_photoid(char * host){
 uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
 
   unsigned char *buffer = malloc(filesize);
+  unsigned char auxbuffer[1000];
   char towrite[100];
   uint32_t photo_id;
-  printf("nome %s\n", photo_name);
   sprintf(towrite, "%s", photo_name);
   FILE *img = fopen(towrite, "wb");
-  printf("size = %lu\n", filesize);
-
-
-  recv(client_fd, buffer, filesize, 0);
-
-  printf("received\n");
+  int rcv_size=0;
+  int act_rcv_size = 0;
+  int k = 0;
   int i;
-  for(i=0;i<1000;i++){
-    printf("%u ", buffer[i]);
+  int j = 0;
+
+  //recv(client_fd, buffer, filesize, 0);
+  while(rcv_size < filesize-1000){
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    rcv_size=act_rcv_size+rcv_size;
+    j=0;
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+    k++;
   }
-  printf("\n");
-  printf("printed\n");
+  if(rcv_size!=filesize){
+    j=0;
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
+      buffer[i] = auxbuffer[j];
+      j++;
+    }
+  }
 
   fwrite(buffer,1,filesize,img);
 
-  printf("wrote\n");
   fclose(img);
-
   photo_id=get_photoid(host);
   add_photo_hash_table(table, photo_name, photo_id);
-
   free(buffer);
-
   return photo_id;
 }
 

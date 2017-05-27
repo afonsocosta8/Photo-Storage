@@ -46,17 +46,17 @@ int main(int argc, char const *argv[]) {
   p=atoi(port);
   int photo_id;
 
-    psock = gallery_connect(host, p);
+    /*psock = gallery_connect(host, p);
     if(psock>0){
-      photo_id = gallery_add_photo(psock, "5000.png");
+      photo_id = gallery_add_photo(psock, "teste.png");
     }
-    getchar();
+    getchar();*/
     psock = gallery_connect(host, p);
 
     if(psock>0){
-      gallery_get_photo_name(psock, photo_id, name);
+      gallery_get_photo(psock, 2, "teste.png");
     }
-    printf("printing name:\n");
+    /*printf("printing name:\n");
     printf("name is %s\n", (*name));
     getchar();
 
@@ -78,7 +78,7 @@ int main(int argc, char const *argv[]) {
 
     if(psock>0){
       gallery_delete_photo(psock, photo_id);
-    }
+    }*/
   close(psock);
   return 0;
 }
