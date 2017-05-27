@@ -731,6 +731,10 @@ void * handle_client(void * arg){
             fclose(img);
             free(buffer);
           }
+          nbytes = recv(client_fd, buff, 3, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+          #endif
           free(buffer);
           fclose(img);
         }
