@@ -322,7 +322,10 @@ void * handle_client(void * arg){
   int total;
   char ** brothers;
   struct sockaddr_in brother_addr;
+  struct sockaddr_in gw_address;
+  int gw_sock;
   int i;
+  char peerdead[30];
 
   strcpy(host, arguments->host);
   photo_hash_table *table = arguments->table;
@@ -414,8 +417,31 @@ void * handle_client(void * arg){
         if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
           #ifdef DEBUG
             printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+            printf("\tDEBUG: INFORMING GW TO REMOVE THIS PEER\n");
           #endif
-      		return 0;
+
+          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+          if(gw_sock == -1){
+            perror("ERROR CREATING SOCKER\n");
+            exit(-1);
+          }
+
+          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+          gw_address.sin_family = AF_INET;
+          gw_address.sin_port = htons(9002);
+          inet_aton(host, &gw_address.sin_addr);
+          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
+
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+          #endif
+
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
+
       	}
 
         sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
@@ -428,12 +454,36 @@ void * handle_client(void * arg){
           #ifdef DEBUG
             printf("\tDEBUG: MESSAGE NOT SENT\n");
           #endif
+
+          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+          if(gw_sock == -1){
+            perror("ERROR CREATING SOCKER\n");
+            exit(-1);
+          }
+
+          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+          gw_address.sin_family = AF_INET;
+          gw_address.sin_port = htons(9002);
+          inet_aton(host, &gw_address.sin_addr);
+          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
+
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+          #endif
+
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
+
         }
 
         close(brother_sock);
         free(brothers[i]);
 
       }
+      free(brothers);
 
 
 
@@ -565,6 +615,8 @@ void * handle_client(void * arg){
         free(brothers[i]);
 
       }
+
+      free(brothers);
 
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
 
