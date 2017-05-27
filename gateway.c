@@ -49,51 +49,53 @@ void * inform_remove_peers(void * input){
   int total;
   char ** peers = get_all_peers(list, &total);
 
-  for(i = 0; i<total; i++){
+  if(total!=0){
+    for(i = 0; i<total; i++){
 
 
-    sscanf(peers[i], "%s %d", peer_ip, &peer_port);
+      sscanf(peers[i], "%s %d", peer_ip, &peer_port);
 
-    if(!(peer_port == port_frm && strcmp(ip_frm, peer_ip)==0)){
-      #ifdef DEBUG
-        printf("\t DEBUG: INFORMING %s %d OF %s:%d DEATH\n", peer_ip, peer_port, ip, port);
-      #endif
-
-      // CREATING SOCKET TO SEND MESSAGE
-      #ifdef DEBUG
-        printf("\tDEBUG: CREATING SOCKET...\n");
-      #endif
-      sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-      if(sock_fd == -1){
-        perror("ERROR CREATING SOCKER\n");
-        exit(-1);
-      }
-
-      // PREPARING TO SEND MESSAGE TO GATEWAY
-      #ifdef DEBUG
-        printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
-      #endif
-      peer_addr.sin_family = AF_INET;
-      peer_addr.sin_port = htons(peer_port);
-      inet_aton(peer_ip, &peer_addr.sin_addr);
-      sprintf(buff, "RMV %s %d", ip, port);
-
-      nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
-      #ifdef DEBUG
-        printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
-      #endif
-      if(nbytes==-1){
+      if(!(peer_port == port_frm && strcmp(ip_frm, peer_ip)==0)){
         #ifdef DEBUG
-          printf("\tDEBUG: MESSAGE NOT SENT\n");
+          printf("\t DEBUG: INFORMING %s %d OF %s:%d DEATH\n", peer_ip, peer_port, ip, port);
         #endif
+
+        // CREATING SOCKET TO SEND MESSAGE
+        #ifdef DEBUG
+          printf("\tDEBUG: CREATING SOCKET...\n");
+        #endif
+        sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if(sock_fd == -1){
+          perror("ERROR CREATING SOCKER\n");
+          exit(-1);
+        }
+
+        // PREPARING TO SEND MESSAGE TO GATEWAY
+        #ifdef DEBUG
+          printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+        #endif
+        peer_addr.sin_family = AF_INET;
+        peer_addr.sin_port = htons(peer_port);
+        inet_aton(peer_ip, &peer_addr.sin_addr);
+        sprintf(buff, "RMV %s %d", ip, port);
+
+        nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+        close(sock_fd);
+        free(peers[i]);
       }
-
-      close(sock_fd);
-      free(peers[i]);
     }
-  }
 
-    free(peers);
+      free(peers);
+  }
     return NULL;
 }
 
@@ -309,49 +311,50 @@ void inform_add_peers(peer_list *list, char *ip, int port){
   int total;
   char ** peers = get_all_peers(list, &total);
 
-  for(i = 0; i<total; i++){
+  if(total!=0){
+    for(i = 0; i<total; i++){
 
-    sscanf(peers[i], "%s %d", peer_ip, &peer_port);
-    #ifdef DEBUG
-      printf("\t DEBUG: INFORMING %s %d TO ADD %s:%d\n", peer_ip, peer_port, ip, port);
-    #endif
-
-    // CREATING SOCKET TO SEND MESSAGE
-    #ifdef DEBUG
-      printf("\tDEBUG: CREATING SOCKET...\n");
-    #endif
-    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sock_fd == -1){
-      perror("ERROR CREATING SOCKER\n");
-      exit(-1);
-    }
-
-    // PREPARING TO SEND MESSAGE TO GATEWAY
-    #ifdef DEBUG
-      printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
-    #endif
-    peer_addr.sin_family = AF_INET;
-    peer_addr.sin_port = htons(peer_port);
-    inet_aton(peer_ip, &peer_addr.sin_addr);
-    sprintf(buff, "ADD %s %d", ip, port);
-
-    nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
-    #ifdef DEBUG
-      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
-    #endif
-    if(nbytes==-1){
+      sscanf(peers[i], "%s %d", peer_ip, &peer_port);
       #ifdef DEBUG
-        printf("\tDEBUG: MESSAGE NOT SENT\n");
+        printf("\t DEBUG: INFORMING %s %d TO ADD %s:%d\n", peer_ip, peer_port, ip, port);
       #endif
+
+      // CREATING SOCKET TO SEND MESSAGE
+      #ifdef DEBUG
+        printf("\tDEBUG: CREATING SOCKET...\n");
+      #endif
+      sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+      if(sock_fd == -1){
+        perror("ERROR CREATING SOCKER\n");
+        exit(-1);
+      }
+
+      // PREPARING TO SEND MESSAGE TO GATEWAY
+      #ifdef DEBUG
+        printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+      #endif
+      peer_addr.sin_family = AF_INET;
+      peer_addr.sin_port = htons(peer_port);
+      inet_aton(peer_ip, &peer_addr.sin_addr);
+      sprintf(buff, "ADD %s %d", ip, port);
+
+      nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &peer_addr, sizeof(peer_addr));
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port), buff);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
+      }
+
+
+      close(sock_fd);
+      free(peers[i]);
     }
 
-
-    close(sock_fd);
-    free(peers[i]);
+    free(peers);
   }
-
-  free(peers);
-
 }
 
 
@@ -422,7 +425,7 @@ void * handle_reg(void * arg){
       sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
       free(existing_peers[i]);
     }
-
+    free(existing_peers);
     nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
     #ifdef DEBUG
       printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
@@ -444,7 +447,7 @@ void * handle_reg(void * arg){
 
 
 
-  free(existing_peers);
+
   free(arguments);
   close(resp_fd);
   return NULL;
