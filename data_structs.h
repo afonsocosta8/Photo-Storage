@@ -38,6 +38,7 @@ typedef struct _key_word{
 typedef struct _keywordlist{
 
   key_word *list;
+  int total;
 
 }keyword_list;
 

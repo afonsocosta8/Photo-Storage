@@ -19,7 +19,7 @@ keyword_list *init_keyword_list(){
   keyword_list *keys = (keyword_list*)malloc(sizeof(keyword_list));
 
   keys->list = NULL;
-
+  keys->total =0;
   return keys;
 
 }
@@ -42,6 +42,7 @@ void add_keyword_list(keyword_list *keys, char *key){
     aux->next = new;
 
   }
+  keys->total++;
 }
 
 int search_keyword_list(keyword_list *list, char *word){
@@ -289,13 +290,13 @@ void free_hash_table(photo_hash_table *table){
 void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id){
 
   add_photo(table->table[get_hash_key(table, id)], name, id);
-
+  table->total++;
 }
 
 int delete_photo_hash(photo_hash_table *table, uint32_t id){
 
   return delete_photo(table->table[get_hash_key(table, id)], id);
-
+  table->total--;
 }
 
 

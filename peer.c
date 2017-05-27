@@ -397,17 +397,6 @@ void * handle_client(void * arg){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
     }else{
       sprintf(buff, "ERROR");
       #ifdef DEBUG
@@ -624,7 +613,35 @@ void * handle_client(void * arg){
       printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d\n", keyword, photo_id);
     #endif
 
-    add_keyword_photo_hash(table, photo_id, keyword);
+    if(add_keyword_photo_hash(table, photo_id, keyword)){
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: ADDED KEYWORD %s to PHOTO %d WITH SUCESS\n", keyword, photo_id);
+      #endif
+
+
+    }else{
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d FAILED\n", keyword, photo_id);
+      #endif
+    }
+
+
+  }else if(strstr(client_query, "GETPHOTOS") != NULL) {
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS GET PHOTOS\n");
+    #endif
+
+    sprintf(buff, "OK %d", table->total);
+
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
 
 
   }else{
@@ -963,8 +980,10 @@ int main(int argc, char const *argv[]) {
   if(strcmp(get_peer_resp, "ERROR NO PEERS")!=0){
     char ipport[30];
     char code[5];
-    char *peer_ip;
-    int peer_port;
+    char *brother_ip;
+    int brother_port;
+    struct sockaddr_in brother_addr;
+    int brother_sock;
 
     sscanf(get_peer_resp, "%s %s", code, ipport);
     if(strcmp(code, "OK")==0){
@@ -973,10 +992,40 @@ int main(int argc, char const *argv[]) {
         printf("\tDEBUG: DECODED MESSAGE AS OK + PEER\n");
       #endif
 
-      peer_ip = strtok(ipport,":");
-      peer_port = atoi(strtok(NULL,":"));
+      brother_ip = strtok(ipport,":");
+      brother_port = atoi(strtok(NULL,":"));
 
-      printf("RETRIEVING FILES FROM PEER %s:%d\n", peer_ip, peer_port);
+      printf("RETRIEVING FILES FROM BROTHER %s:%d\n", brother_ip, brother_port);
+
+      #ifdef DEBUG
+        printf("\tDEBUG: CONNECTING TO BROTHER\n");
+      #endif
+
+      brother_sock= socket(AF_INET, SOCK_STREAM, 0);
+      if(brother_sock == -1){
+        perror("ERROR CREATING SOCKER\n");
+        exit(-1);
+      }
+
+      // PREPARING TO SEND MESSAGE TO GATEWAY
+      #ifdef DEBUG
+        printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+      #endif
+      brother_addr.sin_family = AF_INET;
+      brother_addr.sin_port = htons(brother_port);
+      inet_aton(brother_ip, &brother_addr.sin_addr);
+
+      if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+        #endif
+        return 0;
+      }
+
+
+
+
+
 
 
     }
