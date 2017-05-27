@@ -388,43 +388,61 @@ void * handle_client(void * arg){
           #ifdef DEBUG
             printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
           #endif
-      		return 0;
-      	}
-        char file_name[100];
-        sprintf(file_name, "%u", photo_id);
-        FILE *img = fopen(file_name, "rb");
-        fseek(img, 0, SEEK_END);
-        size_t filesize = ftell(img);
-        fseek(img, 0, SEEK_SET);
-        unsigned char *buffer = (unsigned char *)malloc(filesize);
-        fread(buffer, sizeof *buffer, filesize, img);
-        sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
+          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+          if(gw_sock == -1){
+            perror("ERROR CREATING SOCKER\n");
+            exit(-1);
+          }
 
-        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
-        #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
-        #endif
-        if(nbytes==-1){
-          #ifdef DEBUG
-            printf("\tDEBUG: MESSAGE NOT SENT\n");
-          #endif
-        }
-        nbytes = recv(brother_sock, buff, 3, 0);
-        #ifdef DEBUG
-          printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
-        #endif
-        if(send(brother_sock, buffer, filesize, 0)==-1){
-          #ifdef DEBUG
-            printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
-          #endif
-          fclose(img);
-          free(buffer);
-        }
+          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+          gw_address.sin_family = AF_INET;
+          gw_address.sin_port = htons(9002);
+          inet_aton(host, &gw_address.sin_addr);
+          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
 
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+          #endif
+
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
+      	}else{
+          char file_name[100];
+          sprintf(file_name, "%u", photo_id);
+          FILE *img = fopen(file_name, "rb");
+          fseek(img, 0, SEEK_END);
+          size_t filesize = ftell(img);
+          fseek(img, 0, SEEK_SET);
+          unsigned char *buffer = (unsigned char *)malloc(filesize);
+          fread(buffer, sizeof *buffer, filesize, img);
+          sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
+
+          nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+          #endif
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
+          nbytes = recv(brother_sock, buff, 3, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+          #endif
+          if(send(brother_sock, buffer, filesize, 0)==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
+            #endif
+            fclose(img);
+            free(buffer);
+          }
+        }
         close(brother_sock);
         free(brothers[i]);
-        free(buffer);
-        fclose(img);
       }
       if(total!=0){
         free(brothers);
@@ -465,6 +483,7 @@ void * handle_client(void * arg){
     if(add_keyword_photo_hash(table, photo_id, keyword)){
 
       brothers = get_all_brothers(brothers_list, &total);
+
       for(i = 0; i<total; i++){
         sscanf(brothers[i], "%s %d", brother_ip, &brother_port);
 
@@ -492,6 +511,7 @@ void * handle_client(void * arg){
         inet_aton(brother_ip, &brother_addr.sin_addr);
 
         if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
+
           #ifdef DEBUG
             printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
             printf("\tDEBUG: INFORMING GW TO REMOVE THIS PEER\n");
@@ -519,41 +539,41 @@ void * handle_client(void * arg){
             #endif
           }
 
-      	}
+      	}else{
 
-        sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
+          sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
 
-        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
-        #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
-        #endif
-        if(nbytes==-1){
+          nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
-            printf("\tDEBUG: MESSAGE NOT SENT\n");
+            printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
           #endif
-
-          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
-          if(gw_sock == -1){
-            perror("ERROR CREATING SOCKER\n");
-            exit(-1);
-          }
-
-          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
-          gw_address.sin_family = AF_INET;
-          gw_address.sin_port = htons(9002);
-          inet_aton(host, &gw_address.sin_addr);
-          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
-
-          #ifdef DEBUG
-            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
-          #endif
-
           if(nbytes==-1){
             #ifdef DEBUG
               printf("\tDEBUG: MESSAGE NOT SENT\n");
             #endif
-          }
 
+            gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+            if(gw_sock == -1){
+              perror("ERROR CREATING SOCKER\n");
+              exit(-1);
+            }
+
+            sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+            gw_address.sin_family = AF_INET;
+            gw_address.sin_port = htons(9002);
+            inet_aton(host, &gw_address.sin_addr);
+            nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
+
+            #ifdef DEBUG
+              printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+            #endif
+
+            if(nbytes==-1){
+              #ifdef DEBUG
+                printf("\tDEBUG: MESSAGE NOT SENT\n");
+              #endif
+            }
+          }
         }
 
         close(brother_sock);
@@ -680,19 +700,42 @@ void * handle_client(void * arg){
           #ifdef DEBUG
             printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
           #endif
-      		return 0;
-      	}
 
-        sprintf(buff, "RPLDELETE %d", photo_id);
+          gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
+          if(gw_sock == -1){
+            perror("ERROR CREATING SOCKER\n");
+            exit(-1);
+          }
 
-        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
-        #ifdef DEBUG
-          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
-        #endif
-        if(nbytes==-1){
+          sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
+          gw_address.sin_family = AF_INET;
+          gw_address.sin_port = htons(9002);
+          inet_aton(host, &gw_address.sin_addr);
+          nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
+
           #ifdef DEBUG
-            printf("\tDEBUG: MESSAGE NOT SENT\n");
+            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
           #endif
+
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
+
+      	}else{
+
+          sprintf(buff, "RPLDELETE %d", photo_id);
+
+          nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+          #endif
+          if(nbytes==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: MESSAGE NOT SENT\n");
+            #endif
+          }
         }
 
         close(brother_sock);
