@@ -85,9 +85,11 @@ int main(int argc, char const *argv[]) {
   printf("name is %s\n", (*name));
   getchar();
   psock = gallery_connect(host, p);
+
   if(psock>0){
     gallery_get_photo_name(psock, photo_id2, name);
   }
+
   printf("printing name:\n");
   printf("name is %s\n", (*name));
   getchar();
@@ -181,7 +183,6 @@ int main(int argc, char const *argv[]) {
   if(psock>0){
     gallery_delete_photo(psock, photo_id3);
   }
-
   getchar();
 
   psock = gallery_connect(host, p);
