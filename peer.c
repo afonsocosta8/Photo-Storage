@@ -118,7 +118,6 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
   int k = 0;
   int i;
   int j = 0;
-
   while(rcv_size < filesize-1000){
     act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
     rcv_size=act_rcv_size+rcv_size;
@@ -137,6 +136,7 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
       j++;
     }
   }
+
 
 
   sprintf(towrite, "%u", photo_id);
@@ -698,7 +698,7 @@ void * handle_client(void * arg){
           fseek(img, 0, SEEK_END);
           filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
-          buffer = malloc(filesize);
+          buffer = (unsigned char *)malloc(filesize);
           fread(buffer, sizeof *buffer, filesize, img);
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
@@ -724,7 +724,7 @@ void * handle_client(void * arg){
               printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
             #endif
           }
-          if(send(client_fd, buffer, sizeof(buffer), 0)==-1){
+          if(send(client_fd, buffer, filesize, 0)==-1){
             #ifdef DEBUG
               printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
             #endif
