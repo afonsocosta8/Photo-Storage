@@ -94,7 +94,7 @@ void * inform_remove_peers(void * input){
   }
 
     free(peers);
-    return;
+    return NULL;
 }
 
 
@@ -176,14 +176,14 @@ void * handle_get(void * arg){
         #ifdef DEBUG
           printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
         #endif
-        return;
+        return NULL;
     	}
       if(setsockopt(test_peer_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
         perror("ERROR SETTING SOCKET OPTS\n");
         #ifdef DEBUG
           printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
         #endif
-        return;
+        return NULL;
       }
       strcpy(test_peer_query, "UALIVE?");
       peer_addr.sin_family = AF_INET;
@@ -293,7 +293,7 @@ void * handle_get(void * arg){
   }
   free(arguments);
   close(resp_fd);
-  return;
+  return NULL;
 }
 
 
@@ -447,7 +447,7 @@ void * handle_reg(void * arg){
   free(existing_peers);
   free(arguments);
   close(resp_fd);
-  return;
+  return NULL;
 }
 
 
