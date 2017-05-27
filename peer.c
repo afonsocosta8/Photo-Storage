@@ -751,7 +751,7 @@ void * handle_client(void * arg){
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       printf("replying %d bytes\n", nbytes);
     }
-  }else if(strstr(client_query, "RPLDELETE") != NULL) {
+  }else if(strstr(client_query, "RPLDLT") != NULL) {
 
     uint32_t photo_id;
     sscanf(client_query, "%s %d", answer, &photo_id);
