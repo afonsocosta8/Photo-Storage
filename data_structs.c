@@ -295,8 +295,14 @@ void add_photo_hash_table(photo_hash_table *table, char *name, uint32_t id){
 
 int delete_photo_hash(photo_hash_table *table, uint32_t id){
 
-  return delete_photo(table->table[get_hash_key(table, id)], id);
-  table->total--;
+  if(delete_photo(table->table[get_hash_key(table, id)], id)){
+
+    table->total--;
+    return 1;
+
+  }
+  return 0;
+  
 }
 
 
