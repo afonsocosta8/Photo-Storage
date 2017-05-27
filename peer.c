@@ -984,6 +984,16 @@ int main(int argc, char const *argv[]) {
     int brother_port;
     struct sockaddr_in brother_addr;
     int brother_sock;
+    char query[200];
+    char resp_code[10];
+    int num_photos;
+    int file_size;
+    int id;
+    char name[100];
+    int num_keys;
+    char * keys;
+    char * key;
+
 
     sscanf(get_peer_resp, "%s %s", code, ipport);
     if(strcmp(code, "OK")==0){
@@ -1017,16 +1027,84 @@ int main(int argc, char const *argv[]) {
 
       if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
         #ifdef DEBUG
-          printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+          printf("\tDEBUG: ERROR CONNECTING TO BRTOHER %s:%d\n", brother_ip, brother_port);
         #endif
-        return 0;
+        exit(-1);
       }
 
+      sprintf(query, "GETPHOTOS");
 
+      nbytes = send(brother_sock, query, strlen(query)+1, 0);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
+      }
 
+      nbytes = recv(brother_sock, query, 200, 0);
 
+      if(nbytes<=0) {
+        printf("BRTOHER DID NOT ANSWER\n");
+        exit(-1);
+      }
+      #ifdef DEBUG
+        printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
+      #endif
+      sscanf(query, "%s %d", resp_code, &num_photos);
+      if(strcmp(resp_code, "OK")!=0) {
+        printf("ERROR ON RECEIVING FROM GATEWAY\n");
+        exit(-1);
+      }
+      for(i=0; i<num_photos; i++){
 
+        nbytes = recv(brother_sock, query, 200, 0);
 
+        if(nbytes<=0) {
+          printf("BRTOHER DID NOT ANSWER\n");
+          exit(-1);
+        }
+        #ifdef DEBUG
+          printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
+        #endif
+        sscanf(query, "%s %d %d %s %d", resp_code, &file_size, &id, name, &num_keys);
+        if(strcmp(resp_code, "OK")!=0) {
+          printf("ERROR ON RECEIVING FROM GATEWAY\n");
+          exit(-1);
+        }
+        add_photo_hash_table(photos, name, id);
+
+        #ifdef DEBUG
+          printf("\t\tDEBUG: ADDED A PHOTO TO PHOTO LIST\n");
+          print_photo_hash(photos);
+        #endif
+
+        keys = (char *)malloc(sizeof(char)*22*num_keys);
+        nbytes = recv(brother_sock, keys, 22*num_keys, 0);
+
+        if(nbytes<=0) {
+          printf("BRTOHER DID NOT ANSWER\n");
+          exit(-1);
+        }
+
+        #ifdef DEBUG
+          printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
+        #endif
+        if(num_keys != 0){
+          key = strtok(keys, " ");
+          while(key != NULL){
+            add_keyword_photo_hash(photos, id, key);
+            #ifdef DEBUG
+              printf("\t\tDEBUG: ADDED A KEY %s TO PHOTO LIST\n", key);
+              print_photo_hash(photos);
+            #endif
+          }
+
+        }
+        free(keys);
+      }
 
     }
   }
