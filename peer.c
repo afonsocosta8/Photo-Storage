@@ -354,9 +354,92 @@ void * handle_client(void * arg){
 
     photo_id = add_image(client_fd, photo_name, filesize, host, table);
     if (photo_id!=0) {
-      sprintf(buff, "OK %d", photo_id);
+
+
+
+      brothers = get_all_brothers(brothers_list, &total);
+      for(i = 0; i<total; i++){
+        sscanf(brothers[i], "%s %d", brother_ip, &brother_port);
+
+        #ifdef DEBUG
+          printf("\t DEBUG: INFORMING %s %d TO ADD PHOTO\n", brother_ip, brother_port);
+        #endif
+
+        // CREATING SOCKET TO SEND MESSAGE
+        #ifdef DEBUG
+          printf("\tDEBUG: CREATING SOCKET...\n");
+        #endif
+
+        brother_sock= socket(AF_INET, SOCK_STREAM, 0);
+        if(brother_sock == -1){
+          perror("ERROR CREATING SOCKER\n");
+          exit(-1);
+        }
+
+        // PREPARING TO SEND MESSAGE TO GATEWAY
+        #ifdef DEBUG
+          printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+        #endif
+        brother_addr.sin_family = AF_INET;
+        brother_addr.sin_port = htons(brother_port);
+        inet_aton(brother_ip, &brother_addr.sin_addr);
+
+        if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+          #endif
+      		return 0;
+      	}
+        char file_name[100];
+        sprintf(file_name, "%u", photo_id);
+        FILE *img = fopen(file_name, "rb");
+        fseek(img, 0, SEEK_END);
+        size_t filesize = ftell(img);
+        fseek(img, 0, SEEK_SET);
+        unsigned char *buffer = (unsigned char *)malloc(filesize);
+        fread(buffer, sizeof *buffer, filesize, img);
+        sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
+
+        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+        nbytes = recv(brother_sock, buff, 3, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+        #endif
+        if(send(brother_sock, buffer, filesize, 0)==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
+          #endif
+          fclose(img);
+          free(buffer);
+        }
+
+        close(brother_sock);
+        free(brothers[i]);
+        free(buffer);
+        fclose(img);
+      }
+      if(total!=0){
+        free(brothers);
+      }
+
+      sprintf(buff, "OK");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+      #endif
+
+
+
+
     }else{
       printf("ERROR. COULDN'T STORE PHOTO\n");
       sprintf(buff, "ERROR");
@@ -721,6 +804,45 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d FAILED\n", keyword, photo_id);
       #endif
     }
+
+
+  }else if(strstr(client_query, "RPLADD") != NULL) {
+
+
+
+    size_t filesize;
+    char photo_name[100];
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS RPL KEYWORD\n");
+    #endif
+
+    uint32_t photo_id;
+    sscanf(client_query, "%s %s %d %zu", answer, photo_name, &photo_id, &filesize);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: ADDING PHOTO %s WITH ID %d OF SIZE %zu\n", photo_name, photo_id, filesize);
+    #endif
+
+    sprintf(buff, "OK");
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+    #ifdef DEBUG
+      printf("\t\tDEBUG: [4] SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+    #endif
+    if(nbytes==-1){
+      #ifdef DEBUG
+        printf("\tDEBUG: MESSAGE NOT SENT\n");
+      #endif
+    }
+
+    add_image_brother(client_fd, photo_id, filesize);
+
+    add_photo_hash_table(table, photo_name, photo_id);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: ## ADDED A PHOTO TO PHOTO LIST\n");
+      print_photo_hash(table);
+    #endif
+
 
 
   }else if(strstr(client_query, "SHAREPHOTOS") != NULL) {
