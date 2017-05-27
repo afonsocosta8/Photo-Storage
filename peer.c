@@ -114,8 +114,8 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   unsigned char auxbuffer[1000];
   char towrite[100];
   uint32_t photo_id;
-  sprintf(towrite, "%s", photo_name);
-  FILE *img = fopen(towrite, "wb");
+  //sprintf(towrite, "%s", photo_name);
+  //FILE *img = fopen(towrite, "wb");
   int rcv_size=0;
   int act_rcv_size = 0;
   int k = 0;
@@ -142,10 +142,15 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
     }
   }
 
+
+  photo_id=get_photoid(host);
+  sprintf(towrite, "%u", photo_id);
+  FILE *img = fopen(towrite, "wb");
+
   fwrite(buffer,1,filesize,img);
 
   fclose(img);
-  photo_id=get_photoid(host);
+
   add_photo_hash_table(table, photo_name, photo_id);
   free(buffer);
   return photo_id;
@@ -156,12 +161,13 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
   char photo_name[100];
   int ret;
   printf("id=%d\n", photo_id);
+  char todelete[20];
   print_photo_hash(table);
   if(get_photo_name_hash(table, photo_id, photo_name)==0){
     return -1;
   }
-
-  ret = remove(photo_name);
+  sprintf(todelete, "%u", photo_id);
+  ret = remove(todelete);
 
   if(ret == 0){
     int r = delete_photo_hash(table, photo_id);
@@ -196,7 +202,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     printf("DEBUG: GETTING PHOTO NAME: %s\n", photo_name);
   #endif
 
-  sprintf(file_name, "%s", photo_name);
+  sprintf(file_name, "%d", photo_id);
 
   FILE *img = fopen(file_name, "rb");
   if(img == NULL)
@@ -631,7 +637,7 @@ void * handle_client(void * arg){
   }
 
   close(client_fd);
-  return;
+  return NULL;
 }
 
 void * handle_alive(void * arg){

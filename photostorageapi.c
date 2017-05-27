@@ -546,7 +546,6 @@ int gallery_get_photo_name(int peer_socket, uint32_t id_photo, char **photo_name
 
     char query_buff[100], buff[100], answer[10];
     char name[100];
-    char * ret_name;
     int nbytes;
 
     // PREPARING PROTOCOL MESSAGE TO PEER
@@ -609,9 +608,7 @@ int gallery_get_photo_name(int peer_socket, uint32_t id_photo, char **photo_name
         printf("\tDEBUG: PHOTO FOUND: %s\n", name);
       #endif
 
-      ret_name = (char*)malloc(sizeof(name));
       strcpy(*photo_name, name);
-      //photo_name = &ret_name;
 
 
       #ifdef DEBUG
@@ -699,7 +696,7 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
 
-  FILE *img = fopen(photo_name, "wb");
+  FILE *img = fopen(file_name, "wb");
   unsigned char *buffer = malloc(filesize);
   unsigned char auxbuffer[1000];
   int i,j,k;
