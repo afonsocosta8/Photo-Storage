@@ -118,7 +118,6 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
   int k = 0;
   int i;
   int j = 0;
-
   while(rcv_size < filesize-1000){
     act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
     rcv_size=act_rcv_size+rcv_size;
@@ -137,6 +136,7 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
       j++;
     }
   }
+
 
 
   sprintf(towrite, "%u", photo_id);
@@ -198,14 +198,11 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 
 uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
-  char photo_name[100];
   int ret;
   printf("id=%d\n", photo_id);
   char todelete[20];
   print_photo_hash(table);
-  if(get_photo_name_hash(table, photo_id, photo_name)==0){
-    return -1;
-  }
+
   sprintf(todelete, "%u", photo_id);
   ret = remove(todelete);
 
@@ -221,6 +218,9 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
     return -1;
   }
 
+
+
+  print_photo_hash(table);
 
 }
 
@@ -380,12 +380,6 @@ void * handle_client(void * arg){
     #endif
 
     if(add_keyword_photo_hash(table, photo_id, keyword)){
-      sprintf(buff, "OK");
-      #ifdef DEBUG
-        printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
-        print_photo_hash(table);
-      #endif
-
 
       brothers = get_all_brothers(brothers_list, &total);
       for(i = 0; i<total; i++){
@@ -482,6 +476,12 @@ void * handle_client(void * arg){
         close(brother_sock);
         free(brothers[i]);
 
+        sprintf(buff, "OK");
+        #ifdef DEBUG
+          printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
+          print_photo_hash(table);
+        #endif
+
       }
       free(brothers);
 
@@ -559,7 +559,6 @@ void * handle_client(void * arg){
 
     }else{
 
-      sprintf(buff, "OK");
       #ifdef DEBUG
         printf("\t\tDEBUG: DELETED\n");
       #endif
@@ -618,6 +617,7 @@ void * handle_client(void * arg){
 
       free(brothers);
 
+      sprintf(buff, "OK");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
 
       #ifdef DEBUG
@@ -674,7 +674,7 @@ void * handle_client(void * arg){
       printf("\t\tDEBUG: DECODED AS RPL DELETE PHOTO %d\n", photo_id);
     #endif
 
-    if(delete_image(client_fd, photo_id, table)){
+    if(delete_image(client_fd, photo_id, table)==1){
 
       #ifdef DEBUG
         printf("\t\tDEBUG: DELETED PHOTO %d WITH SUCCESS\n", photo_id);
@@ -750,7 +750,7 @@ void * handle_client(void * arg){
           fseek(img, 0, SEEK_END);
           filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
-          buffer = malloc(filesize);
+          buffer = (unsigned char *)malloc(filesize);
           fread(buffer, sizeof *buffer, filesize, img);
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
@@ -776,7 +776,7 @@ void * handle_client(void * arg){
               printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
             #endif
           }
-          if(send(client_fd, buffer, sizeof(buffer), 0)==-1){
+          if(send(client_fd, buffer, filesize, 0)==-1){
             #ifdef DEBUG
               printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
             #endif
@@ -1363,7 +1363,7 @@ int main(int argc, char const *argv[]) {
   #endif
   struct sockaddr_in local_addr;
   struct sockaddr_in client_addr;
-  socklen_t size_addr;
+  socklen_t size_addr = sizeof(client_addr);
 
   #ifdef DEBUG
     printf("\tDEBUG: CREATING TCP SOCKET\n");
