@@ -648,14 +648,13 @@ void * handle_client(void * arg){
     photo *aux;
     key_word *aux1;
     int j;
-
-
+    FILE *img;
 
     for(i=0; i<table->size; i++){
       if(table->table[i]->list!=NULL)
         for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
           sprintf(file_name, "%u", aux->id);
-          FILE *img = fopen(file_name, "rb");
+          img = fopen(file_name, "rb");
           fseek(img, 0, SEEK_END);
           filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
@@ -685,9 +684,15 @@ void * handle_client(void * arg){
               printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
             #endif
           }
-          #ifdef DEBUG
-            printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
-          #endif
+          if(send(client_fd, buffer, sizeof(buffer), 0)==-1){
+            #ifdef DEBUG
+              printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
+            #endif
+            fclose(img);
+            free(buffer);
+          }
+          free(buffer);
+          fclose(img);
         }
     }
 
