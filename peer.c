@@ -683,7 +683,7 @@ void * handle_client(void * arg){
       		return 0;
       	}
 
-        sprintf(buff, "RPLDELETE %d", photo_id);
+        sprintf(buff, "RPLDLT %d", photo_id);
 
         nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
         #ifdef DEBUG
