@@ -44,7 +44,7 @@ int main(int argc, char const *argv[]) {
   *name = (char*)malloc(100);
   uint32_t **ids = (uint32_t**)malloc(sizeof(uint32_t*));
   p=atoi(port);
-  int photo_id1,photo_id2,photo_id3, photo_id;
+  int photo_id1,photo_id2,photo_id3;
 
   psock = gallery_connect(host, p);
   if(psock>0){
@@ -52,12 +52,6 @@ int main(int argc, char const *argv[]) {
   }
   getchar();
 
-
-  psock = gallery_connect(host, p);
-  if(psock>0){
-    photo_id = gallery_add_photo(psock, "teste.png");
-  }
-  getchar();
 
   psock = gallery_connect(host, p);
   if(psock>0){
@@ -87,7 +81,6 @@ int main(int argc, char const *argv[]) {
   psock = gallery_connect(host, p);
 
   if(psock>0){
-    gallery_get_photo(psock, 2, "teste.png");
     gallery_get_photo_name(psock, photo_id2, name);
   }
 
@@ -185,10 +178,5 @@ int main(int argc, char const *argv[]) {
     gallery_delete_photo(psock, photo_id3);
   }
 
-  psock = gallery_connect(host, p);
-
-  if(psock>0){
-    gallery_delete_photo(psock, photo_id);
-  }
   return 0;
 }

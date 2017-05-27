@@ -31,6 +31,7 @@ typedef struct _args_client{
 
   int client_fd;
   photo_hash_table *table;
+  brother_list * brothers;
   char *host;
 
 }args_client;
@@ -269,9 +270,17 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
 void * handle_client(void * arg){
   args_client *arguments = (args_client*)arg;
   char host[20];
+  char brother_ip[20];
+  int brother_port;
+  int brother_sock;
+  int total;
+  char ** brothers;
+  struct sockaddr_in brother_addr;
+  int i;
 
   strcpy(host, arguments->host);
   photo_hash_table *table = arguments->table;
+  brother_list *brothers_list = arguments->brothers;
   int client_fd = arguments->client_fd;
 
   free(arguments);
@@ -306,8 +315,7 @@ void * handle_client(void * arg){
       printf("replying %d bytes\n", nbytes);
     }
 
-  }
-  else if(strstr(client_query, "ADDKEY") != NULL) {
+  }else if(strstr(client_query, "ADDKEY") != NULL) {
 
 
     char keyword[50];
@@ -328,6 +336,71 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
         print_photo_hash(table);
       #endif
+
+
+      brothers = get_all_brothers(brothers_list, &total);
+      for(i = 0; i<total; i++){
+        sscanf(brothers[i], "%s %d", brother_ip, &brother_port);
+
+        #ifdef DEBUG
+          printf("\t DEBUG: INFORMING %s %d TO ADD KEY\n", brother_ip, brother_port);
+        #endif
+
+        // CREATING SOCKET TO SEND MESSAGE
+        #ifdef DEBUG
+          printf("\tDEBUG: CREATING SOCKET...\n");
+        #endif
+
+        brother_sock= socket(AF_INET, SOCK_STREAM, 0);
+        if(brother_sock == -1){
+          perror("ERROR CREATING SOCKER\n");
+          exit(-1);
+        }
+
+        // PREPARING TO SEND MESSAGE TO GATEWAY
+        #ifdef DEBUG
+          printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+        #endif
+        brother_addr.sin_family = AF_INET;
+        brother_addr.sin_port = htons(brother_port);
+        inet_aton(brother_ip, &brother_addr.sin_addr);
+
+        if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+          #endif
+      		return 0;
+      	}
+
+        sprintf(buff, "RPLKEY %d %s", photo_id, keyword);
+
+        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+        close(brother_sock);
+        free(brothers[i]);
+
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     }else{
       sprintf(buff, "ERROR");
@@ -405,6 +478,59 @@ void * handle_client(void * arg){
       #ifdef DEBUG
         printf("\t\tDEBUG: DELETED\n");
       #endif
+
+
+      brothers = get_all_brothers(brothers_list, &total);
+      for(i = 0; i<total; i++){
+        sscanf(brothers[i], "%s %d", brother_ip, &brother_port);
+
+        #ifdef DEBUG
+          printf("\t DEBUG: INFORMING %s %d TO DELETE\n", brother_ip, brother_port);
+        #endif
+
+        // CREATING SOCKET TO SEND MESSAGE
+        #ifdef DEBUG
+          printf("\tDEBUG: CREATING SOCKET...\n");
+        #endif
+
+        brother_sock= socket(AF_INET, SOCK_STREAM, 0);
+        if(brother_sock == -1){
+          perror("ERROR CREATING SOCKER\n");
+          exit(-1);
+        }
+
+        // PREPARING TO SEND MESSAGE TO GATEWAY
+        #ifdef DEBUG
+          printf("\tDEBUG: PREPARING MESSAGE TO GATEWAY\n");
+        #endif
+        brother_addr.sin_family = AF_INET;
+        brother_addr.sin_port = htons(brother_port);
+        inet_aton(brother_ip, &brother_addr.sin_addr);
+
+        if(connect(brother_sock, (const struct sockaddr *) &brother_addr, sizeof(brother_addr))==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%d\n", brother_ip, brother_port);
+          #endif
+      		return 0;
+      	}
+
+        sprintf(buff, "RPLDELETE %d", photo_id);
+
+        nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, buff);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+        close(brother_sock);
+        free(brothers[i]);
+
+      }
+
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
 
       #ifdef DEBUG
@@ -452,6 +578,56 @@ void * handle_client(void * arg){
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       printf("replying %d bytes\n", nbytes);
     }
+  }else if(strstr(client_query, "RPLDELETE") != NULL) {
+
+    uint32_t photo_id;
+    sscanf(client_query, "%s %d", answer, &photo_id);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS RPL DELETE PHOTO %d\n", photo_id);
+    #endif
+
+    if(delete_image(client_fd, photo_id, table)){
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: DELETED PHOTO %d WITH SUCCESS\n", photo_id);
+      #endif
+
+
+    }else{
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: COULD NOT DELETE PHOTO %d\n", photo_id);
+      #endif
+
+
+    }
+
+  }else if(strstr(client_query, "RPLKEY") != NULL) {
+
+
+    char keyword[50];
+    #ifdef DEBUG
+      printf("\t\tDEBUG: DECODED AS RPL KEYWORD\n");
+    #endif
+
+    uint32_t photo_id;
+    sscanf(client_query, "%s %d %s", answer, &photo_id, keyword);
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: ADDING KEYWORD %s to PHOTO %d\n", keyword, photo_id);
+    #endif
+
+    add_keyword_photo_hash(table, photo_id, keyword);
+
+
+  }else{
+
+    #ifdef DEBUG
+      printf("\t\tDEBUG: COULD NOT DECODE CLIENT QUERY\n");
+    #endif
+
+
   }
 
   close(client_fd);
@@ -881,6 +1057,7 @@ int main(int argc, char const *argv[]) {
     arguments1 = (args_client*)malloc(sizeof(args_client));
     arguments1->table = photos;
     arguments1->host = host;
+    arguments1->brothers = brothers;
 
     #ifdef DEBUG
       printf("\tDEBUG: WAITING FOR CLIENTS...\n");
