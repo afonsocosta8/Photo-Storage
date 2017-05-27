@@ -430,7 +430,7 @@ void * handle_client(void * arg){
         free(brothers);
       }
 
-      sprintf(buff, "OK");
+      sprintf(buff, "OK %d", photo_id);
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
 
       #ifdef DEBUG
