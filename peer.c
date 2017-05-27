@@ -1095,6 +1095,23 @@ int main(int argc, char const *argv[]) {
         printf("ERROR ON RECEIVING FROM BROTHER\n");
         exit(-1);
       }
+
+
+
+      sprintf(query, "OK");
+      nbytes = send(brother_sock, query, strlen(query)+1, 0);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
+      }
+
+
+
+
       for(i=0; i<num_photos; i++){
 
         #ifdef DEBUG
@@ -1122,6 +1139,23 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: ADDED A PHOTO TO PHOTO LIST\n");
           print_photo_hash(photos);
         #endif
+
+
+
+        sprintf(query, "OK");
+        nbytes = send(brother_sock, query, strlen(query)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
+
+
+
+
         if(num_keys != 0){
 
           keys = (char *)malloc(sizeof(char)*22*num_keys);
@@ -1149,6 +1183,16 @@ int main(int argc, char const *argv[]) {
 
         }
         free(keys);
+        sprintf(query, "OK");
+        nbytes = send(brother_sock, query, strlen(query)+1, 0);
+        #ifdef DEBUG
+          printf("\t\tDEBUG: SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+        #endif
+        if(nbytes==-1){
+          #ifdef DEBUG
+            printf("\tDEBUG: MESSAGE NOT SENT\n");
+          #endif
+        }
       }
       close(brother_sock);
     }
