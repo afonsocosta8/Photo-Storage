@@ -628,7 +628,7 @@ void * handle_client(void * arg){
     }
 
 
-  }else if(strstr(client_query, "GETPHOTOS") != NULL) {
+  }else if(strstr(client_query, "SHAREPHOTOS") != NULL) {
 
     #ifdef DEBUG
       printf("\t\tDEBUG: DECODED AS GET PHOTOS\n");
@@ -663,12 +663,20 @@ void * handle_client(void * arg){
           fread(buffer, sizeof *buffer, filesize, img);
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-          sprintf(buff, "KEYS");
-          if(aux->keywords->list!=NULL)
-            for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
-              sprintf(buff, "%s %s", buff, aux1->key);
-            }
-          nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+          #endif
+          if(aux->keywords->total!=0){
+            sprintf(buff, "KEYS");
+            if(aux->keywords->list!=NULL)
+              for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
+                sprintf(buff, "%s %s", buff, aux1->key);
+              }
+            nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+          }
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
+          #endif
         }
     }
 
@@ -1061,7 +1069,7 @@ int main(int argc, char const *argv[]) {
         exit(-1);
       }
 
-      sprintf(query, "GETPHOTOS");
+      sprintf(query, "SHAREPHOTOS");
 
       nbytes = send(brother_sock, query, strlen(query)+1, 0);
       #ifdef DEBUG
@@ -1084,10 +1092,14 @@ int main(int argc, char const *argv[]) {
       #endif
       sscanf(query, "%s %d", resp_code, &num_photos);
       if(strcmp(resp_code, "OK")!=0) {
-        printf("ERROR ON RECEIVING FROM GATEWAY\n");
+        printf("ERROR ON RECEIVING FROM BROTHER\n");
         exit(-1);
       }
       for(i=0; i<num_photos; i++){
+
+        #ifdef DEBUG
+          printf("\n\n\t\t\tDEBUG: RECEIVING PHOTO NUMBER %d\n", i);
+        #endif
 
         nbytes = recv(brother_sock, query, 200, 0);
 
@@ -1098,9 +1110,10 @@ int main(int argc, char const *argv[]) {
         #ifdef DEBUG
           printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
         #endif
+
         sscanf(query, "%s %d %d %s %d", resp_code, &file_size, &id, name, &num_keys);
-        if(strcmp(resp_code, "OK")!=0) {
-          printf("ERROR ON RECEIVING FROM GATEWAY\n");
+        if(strcmp(resp_code, "PHOTO")!=0) {
+          printf("ERROR ON RECEIVING FROM BROTHER\n");
           exit(-1);
         }
         add_photo_hash_table(photos, name, id);
@@ -1109,32 +1122,35 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: ADDED A PHOTO TO PHOTO LIST\n");
           print_photo_hash(photos);
         #endif
-
-        keys = (char *)malloc(sizeof(char)*22*num_keys);
-        nbytes = recv(brother_sock, keys, 22*num_keys, 0);
-
-        if(nbytes<=0) {
-          printf("BRTOHER DID NOT ANSWER\n");
-          exit(-1);
-        }
-
-        #ifdef DEBUG
-          printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
-        #endif
         if(num_keys != 0){
-          key = strtok(keys, " ");
+
+          keys = (char *)malloc(sizeof(char)*22*num_keys);
+          nbytes = recv(brother_sock, keys, 22*num_keys, 0);
+
+          if(nbytes<=0) {
+            printf("BRTOHER DID NOT ANSWER\n");
+            exit(-1);
+          }
+
+          #ifdef DEBUG
+            printf("\t\tDEBUG: %dB RECV --- %s ---\n", nbytes,  query);
+          #endif
+
+          strtok(keys, " ");
+          key = strtok(NULL, " ");
           while(key != NULL){
             add_keyword_photo_hash(photos, id, key);
             #ifdef DEBUG
               printf("\t\tDEBUG: ADDED A KEY %s TO PHOTO LIST\n", key);
               print_photo_hash(photos);
             #endif
+            key = strtok(NULL, " ");
           }
 
         }
         free(keys);
       }
-
+      close(brother_sock);
     }
   }
 
