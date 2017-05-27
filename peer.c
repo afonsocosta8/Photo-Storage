@@ -348,6 +348,9 @@ void * handle_client(void * arg){
 
     sscanf(client_query, "%s %s %lu", answer, photo_name, &filesize);
 
+    sprintf(buff, "OK");
+    nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+    printf("replying %d bytes\n", nbytes);
 
     photo_id = add_image(client_fd, photo_name, filesize, host, table);
     if (photo_id!=0) {
