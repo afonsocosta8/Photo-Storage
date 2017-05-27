@@ -177,7 +177,6 @@ int main(int argc, char const *argv[]) {
   if(psock>0){
     gallery_delete_photo(psock, photo_id3);
   }
-  getchar();
 
   return 0;
 }

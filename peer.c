@@ -292,7 +292,7 @@ void * handle_client(void * arg){
   free(arguments);
   int nbytes;
   char client_query[100];
-  char buff[100];
+  char buff[200];
   char answer[10];
   nbytes = recv(client_fd, client_query, 100, 0);
   printf("received %d bytes --- %s ---\n", nbytes, client_query);
@@ -642,6 +642,35 @@ void * handle_client(void * arg){
       printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
     #endif
 
+    unsigned char *buffer;
+    size_t filesize;
+    char file_name[20];
+    photo *aux;
+    key_word *aux1;
+    int j;
+
+
+
+    for(i=0; i<table->size; i++){
+      if(table->table[i]->list!=NULL)
+        for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
+          sprintf(file_name, "%u", aux->id);
+          FILE *img = fopen(file_name, "rb");
+          fseek(img, 0, SEEK_END);
+          filesize = ftell(img);
+          fseek(img, 0, SEEK_SET);
+          buffer = malloc(filesize);
+          fread(buffer, sizeof *buffer, filesize, img);
+          sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
+          nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+          sprintf(buff, "KEYS");
+          if(aux->keywords->list!=NULL)
+            for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
+              sprintf(buff, "%s %s", buff, aux1->key);
+            }
+          nbytes = send(client_fd, buff, strlen(buff)+1, 0);
+        }
+    }
 
 
   }else{
