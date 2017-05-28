@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -12,6 +13,10 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #include "data_structs.h"
 
@@ -108,91 +113,74 @@ uint32_t get_photoid(char * host){
 
 }
 
-void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize){
+void add_image_brother(int client_fd, uint32_t photo_id){
 
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
-  char towrite[100];
-  int rcv_size=0;
-  int act_rcv_size = 0;
-  int k = 0;
-  int i;
-  int j = 0;
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-  }
-
-
-
+  size_t len;
+  char buffer[BUFSIZ];
+  int file_size;
+  char towrite[20];
+  int remain_data = 0;
   sprintf(towrite, "%u", photo_id);
-  FILE *img = fopen(towrite, "wb");
+  //recv(client_fd, buffer, filesize, 0);
+  recv(client_fd, buffer, BUFSIZ, 0);
+  file_size = atoi(buffer);
+  FILE *img = fopen(towrite, "w");
+  if (img == NULL){
+    fprintf(stderr, "Failed to open file foo --> %s\n", strerror(errno));
 
-  fwrite(buffer,1,filesize,img);
+    exit(EXIT_FAILURE);
+  }
+
+  remain_data = file_size;
+
+  while ((remain_data > 0)){
+    len = recv(client_fd, buffer, BUFSIZ, 0);
+    fwrite(buffer, sizeof(char), len, img);
+    remain_data -= len;
+    fprintf(stdout, "Receive %zu bytes and we hope :- %d bytes\n", len, remain_data);
+  }
+
 
   fclose(img);
-  free(buffer);
 }
 
 uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
 
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
   char towrite[100];
   uint32_t photo_id;
   //sprintf(towrite, "%s", photo_name);
   //FILE *img = fopen(towrite, "wb");
-  int rcv_size=0;
-  int act_rcv_size = 0;
-  int k = 0;
-  int i;
-  int j = 0;
+  size_t len;
+  char buffer[BUFSIZ];
+  int file_size;
+  int remain_data = 0;
 
   //recv(client_fd, buffer, filesize, 0);
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-  }
-
-
+  recv(client_fd, buffer, BUFSIZ, 0);
+  file_size = atoi(buffer);
+  //fprintf(stdout, "\nFile size : %d\n", file_size);
   photo_id=get_photoid(host);
   sprintf(towrite, "%u", photo_id);
-  FILE *img = fopen(towrite, "wb");
+  FILE *img = fopen(towrite, "w");
+  if (img == NULL){
+    fprintf(stderr, "Failed to open file foo --> %s\n", strerror(errno));
 
-  fwrite(buffer,1,filesize,img);
+    exit(EXIT_FAILURE);
+  }
+
+  remain_data = file_size;
+
+  while ((remain_data > 0)){
+    len = recv(client_fd, buffer, BUFSIZ, 0);
+    fwrite(buffer, sizeof(char), len, img);
+    remain_data -= len;
+    fprintf(stdout, "Receive %zu bytes and we hope :- %d bytes\n", len, remain_data);
+  }
 
   fclose(img);
 
   add_photo_hash_table(table, photo_name, photo_id);
-  free(buffer);
+
   return photo_id;
 }
 
@@ -227,6 +215,12 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
 int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   char buff[100];
+  size_t len;
+  int sent_bytes = 0;
+  char file_size[256];
+  struct stat file_stat;
+  off_t offset;
+  int remain_data;
 
   // OPENING FILE
   #ifdef DEBUG
@@ -244,17 +238,10 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   sprintf(file_name, "%d", photo_id);
 
-  FILE *img = fopen(file_name, "rb");
-  if(img == NULL)
-    return 0;
-
 
   // GET FILE CHARECTERISTICS
-  fseek(img, 0, SEEK_END);
-  size_t filesize = ftell(img);
-  fseek(img, 0, SEEK_SET);
 
-  sprintf(buff, "OK %s %zu", photo_name, filesize);
+  sprintf(buff, "OK");
 
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
@@ -264,7 +251,6 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
     #endif
-    fclose(img);
     close(client_fd);
     return 0;
   }
@@ -272,19 +258,44 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
     printf("\tDEBUG: SENT TO PEER --- %s ---\n", buff);
   #endif
 
-  unsigned char *buffer = malloc(filesize);
-  fread(buffer, sizeof *buffer, filesize, img);
 
-  if(send(client_fd, buffer, filesize, 0)==-1){
-    #ifdef DEBUG
-      printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
-    #endif
-    fclose(img);
-    close(client_fd);
-    return 0;
+
+  int img = open(file_name, O_RDONLY);
+  if (img == -1){
+    fprintf(stderr, "Error opening file --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
   }
 
-  free(buffer);
+  /* Get file stats */
+  if (fstat(img, &file_stat) < 0){
+    fprintf(stderr, "Error fstat --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
+  }
+
+  sprintf(file_size, "%ld", file_stat.st_size);
+
+  /* Sending file size */
+  len = send(client_fd, file_size, sizeof(file_size), 0);
+  if (len < 0){
+    fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(stdout, "Server sent %lu bytes for the size\n", len);
+
+  offset = 0;
+  remain_data = file_stat.st_size;
+  /* Sending file data */
+  while (((sent_bytes = sendfile(client_fd, img, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+    fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+    remain_data -= sent_bytes;
+    fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+  }
+
+  close(img);
   return 1;
 }
 
@@ -411,14 +422,15 @@ void * handle_client(void * arg){
           }
       	}else{
           char file_name[100];
+          size_t len;
+          int sent_bytes = 0;
+          char file_size[256];
+          struct stat file_stat;
+          off_t offset;
+          int remain_data;
           sprintf(file_name, "%u", photo_id);
-          FILE *img = fopen(file_name, "rb");
-          fseek(img, 0, SEEK_END);
-          size_t filesize = ftell(img);
-          fseek(img, 0, SEEK_SET);
-          unsigned char *buffer = (unsigned char *)malloc(filesize);
-          fread(buffer, sizeof *buffer, filesize, img);
-          sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
+
+          sprintf(buff, "RPLADD %s %d", photo_name, photo_id);
 
           nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
@@ -433,13 +445,45 @@ void * handle_client(void * arg){
           #ifdef DEBUG
             printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
           #endif
-          if(send(brother_sock, buffer, filesize, 0)==-1){
-            #ifdef DEBUG
-              printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
-            #endif
-            fclose(img);
-            free(buffer);
+
+          int img = open(file_name, O_RDONLY);
+          if (img == -1){
+            fprintf(stderr, "Error opening file --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
           }
+
+          /* Get file stats */
+          if (fstat(img, &file_stat) < 0){
+            fprintf(stderr, "Error fstat --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
+          }
+
+          sprintf(file_size, "%ld", file_stat.st_size);
+
+          /* Sending file size */
+          len = send(brother_sock, file_size, sizeof(file_size), 0);
+          if (len < 0){
+            fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
+          }
+
+          fprintf(stdout, "Server sent %lu bytes for the size\n", len);
+
+          offset = 0;
+          remain_data = file_stat.st_size;
+          /* Sending file data */
+          while (((sent_bytes = sendfile(brother_sock, img, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+            fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+            remain_data -= sent_bytes;
+            fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+          }
+
+
+          close(img);
+
         }
         close(brother_sock);
         free(brothers[i]);
@@ -854,17 +898,17 @@ void * handle_client(void * arg){
 
 
 
-    size_t filesize;
+
     char photo_name[100];
     #ifdef DEBUG
       printf("\t\tDEBUG: DECODED AS RPL KEYWORD\n");
     #endif
 
     uint32_t photo_id;
-    sscanf(client_query, "%s %s %d %zu", answer, photo_name, &photo_id, &filesize);
+    sscanf(client_query, "%s %s %d", answer, photo_name, &photo_id);
 
     #ifdef DEBUG
-      printf("\t\tDEBUG: ADDING PHOTO %s WITH ID %d OF SIZE %zu\n", photo_name, photo_id, filesize);
+      printf("\t\tDEBUG: ADDING PHOTO %s WITH ID %d\n", photo_name, photo_id);
     #endif
 
     sprintf(buff, "OK");
@@ -878,7 +922,7 @@ void * handle_client(void * arg){
       #endif
     }
 
-    add_image_brother(client_fd, photo_id, filesize);
+    add_image_brother(client_fd, photo_id);
 
     add_photo_hash_table(table, photo_name, photo_id);
 
@@ -903,25 +947,29 @@ void * handle_client(void * arg){
       printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
     #endif
 
-    unsigned char *buffer;
-    size_t filesize;
+    nbytes = recv(client_fd, buff, 3, 0);
+    #ifdef DEBUG
+      printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
+    #endif
+
+
     char file_name[20];
     photo *aux;
     key_word *aux1;
     int j;
-    FILE *img;
+    int img;
+    size_t len;
+    int sent_bytes = 0;
+    char file_size[256];
+    struct stat file_stat;
+    off_t offset;
+    int remain_data;
 
     for(i=0; i<table->size; i++){
       if(table->table[i]->list!=NULL)
         for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
           sprintf(file_name, "%u", aux->id);
-          img = fopen(file_name, "rb");
-          fseek(img, 0, SEEK_END);
-          filesize = ftell(img);
-          fseek(img, 0, SEEK_SET);
-          buffer = (unsigned char *)malloc(filesize);
-          fread(buffer, sizeof *buffer, filesize, img);
-          sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
+          sprintf(buff, "PHOTO %u %s %d", aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
             printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
@@ -945,19 +993,56 @@ void * handle_client(void * arg){
               printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
             #endif
           }
-          if(send(client_fd, buffer, filesize, 0)==-1){
+
+
+
+
+          img = open(file_name, O_RDONLY);
+          if (img == -1){
+            fprintf(stderr, "Error opening file --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
+          }
+
+          /* Get file stats */
+          if (fstat(img, &file_stat) < 0){
+            fprintf(stderr, "Error fstat --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
+          }
+
+          sprintf(file_size, "%ld", file_stat.st_size);
+
+          /* Sending file size */
+          len = send(client_fd, file_size, sizeof(file_size), 0);
+          if (len < 0){
+            fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
+
+            exit(EXIT_FAILURE);
+          }
+
+          fprintf(stdout, "Server sent %lu bytes for the size\n", len);
+
+          offset = 0;
+          remain_data = file_stat.st_size;
+          /* Sending file data */
+          while (((sent_bytes = sendfile(client_fd, img, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+            fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+            remain_data -= sent_bytes;
+            fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+          }
+          /*if(send(client_fd, buffer, filesize, 0)==-1){
             #ifdef DEBUG
               printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
             #endif
             fclose(img);
             free(buffer);
-          }
+          }*/
           nbytes = recv(client_fd, buff, 3, 0);
           #ifdef DEBUG
             printf("\t\tDEBUG: RECIVED %dB FROM CLIENT --- %s ---\n", nbytes, buff);
           #endif
-          free(buffer);
-          fclose(img);
+          close(img);
         }
     }
 
@@ -1305,7 +1390,6 @@ int main(int argc, char const *argv[]) {
     char query[200];
     char resp_code[10];
     int num_photos;
-    size_t file_size;
     int id;
     char name[100];
     int num_keys;
@@ -1377,6 +1461,12 @@ int main(int argc, char const *argv[]) {
         exit(-1);
       }
 
+      sprintf(query, "OK");
+      nbytes = send(brother_sock,query,strlen(query)+1,0);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, query);
+      #endif
+
       for(i=0; i<num_photos; i++){
 
         #ifdef DEBUG
@@ -1393,14 +1483,14 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: [2] %dB RECV --- %s ---\n", nbytes,  query);
         #endif
 
-        sscanf(query, "%s %zu %d %s %d", resp_code, &file_size, &id, name, &num_keys);
+        sscanf(query, "%s %d %s %d", resp_code, &id, name, &num_keys);
         if(strcmp(resp_code, "PHOTO")!=0) {
           printf("ERROR ON RECEIVING FROM BROTHER\n");
           exit(-1);
         }
 
         #ifdef DEBUG
-          printf("\t\tDEBUG: DECODED: FILESIZE=%zu | ID=%d | NAME=%s | NUMKEYS=%d\n", file_size, id, name, num_keys);
+          printf("\t\tDEBUG: DECODED: ID=%d | NAME=%s | NUMKEYS=%d\n", id, name, num_keys);
         #endif
 
         add_photo_hash_table(photos, name, id);
@@ -1471,7 +1561,7 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: RECEIVING PHOTO\n");
         #endif
 
-        add_image_brother(brother_sock, id, file_size);
+        add_image_brother(brother_sock, id);
 
         #ifdef DEBUG
           printf("\t\tDEBUG: FINISHED RECEIVING PHOTO\n");

@@ -67,6 +67,11 @@ int main(int argc, char const *argv[]) {
       }
     }else if(strcmp(query, "getphoto")==0){
       printf("enter the id and name[by this order and spaced]:\n");
+      fscanf(stdin, "%d %s", &photo_id1, photo_name);
+      psock = gallery_connect(host, p);
+      if(psock>0){
+        photo_id1 = gallery_get_photo(psock, photo_id1, photo_name);
+      }
     }else if(strcmp(query, "getname")==0){
       printf("enter the photo id:\n");
       fscanf(stdin, "%d", &photo_id1);

@@ -6,10 +6,15 @@
 #include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
 #include "photostorageapi.h"
 
 
@@ -162,31 +167,15 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
   char *previous;
   char f_name[100];
   strcpy(f_name, file_name);
-  // OPENING FILE
-  #ifdef DEBUG
-    printf("\tDEBUG: OPENING FILE\n");
-  #endif
-
-  FILE *img = fopen(file_name, "rb");
-  if(img == NULL)
-    return 0;
-
-
-  // OPENING FILE
-  #ifdef DEBUG
-    printf("\tDEBUG: GETTING FILE CHARACTERISTICS\n");
-  #endif
+  size_t len;
+  int sent_bytes = 0;
+  char file_size[256];
+  struct stat file_stat;
+  off_t offset;
+  int remain_data;
 
 
 
-  // GET FILE CHARECTERISTICS
-  fseek(img, 0, SEEK_END);
-  size_t filesize = ftell(img);
-  fseek(img, 0, SEEK_SET);
-
-  #ifdef DEBUG
-    printf("\tDEBUG: FINISHED GETTING FILE CHARECTERISTICS\n");
-  #endif
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
@@ -203,7 +192,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
    printf("Filename is: %s\n", previous);
 
 
-  sprintf(buff, "ADDPHOTO %s %zu", previous, filesize);
+  sprintf(buff, "ADDPHOTO %s", previous);
 
   #ifdef DEBUG
     printf("\tDEBUG: SENDING MESSAGE TO PEER\n");
@@ -213,7 +202,6 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT SEND MESSAGE TO PEER\n");
     #endif
-    fclose(img);
     close(peer_socket);
     return 0;
   }
@@ -228,7 +216,6 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
     #endif
-    fclose(img);
     close(peer_socket);
     return 0;
   }
@@ -241,13 +228,54 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT DECODE MESSAGE RECEIVED\n");
     #endif
-    fclose(img);
     close(peer_socket);
     return 0;
   }
 
+
+
+  strcpy(f_name, file_name);
+
+
+
+  int img = open(f_name, O_RDONLY);
+  if (img == -1){
+    fprintf(stderr, "Error opening file --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
+  }
+
+  /* Get file stats */
+  if (fstat(img, &file_stat) < 0){
+    fprintf(stderr, "Error fstat --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
+  }
+
+  sprintf(file_size, "%ld", file_stat.st_size);
+
+  /* Sending file size */
+  len = send(peer_socket, file_size, sizeof(file_size), 0);
+  if (len < 0){
+    fprintf(stderr, "Error on sending greetings --> %s", strerror(errno));
+
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(stdout, "Server sent %lu bytes for the size\n", len);
+
+  offset = 0;
+  remain_data = file_stat.st_size;
+  /* Sending file data */
+  while (((sent_bytes = sendfile(peer_socket, img, &offset, BUFSIZ)) > 0) && (remain_data > 0)){
+    fprintf(stdout, "1. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+    remain_data -= sent_bytes;
+    fprintf(stdout, "2. Server sent %d bytes from file's data, offset is now : %ld and remaining data = %d\n", sent_bytes, offset, remain_data);
+  }
+
+
   // STORE READ DARA INTO BUFFER
-  unsigned char *buffer = malloc(filesize);
+  /*unsigned char *buffer = malloc(filesize);
   fread(buffer, sizeof *buffer, filesize, img);
 
   if(send(peer_socket, buffer, filesize, 0)==-1){
@@ -257,14 +285,15 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     fclose(img);
     close(peer_socket);
     return 0;
-  }
+  }*/
+
   nbytes = 0;
   nbytes = recv(peer_socket, buff, sizeof(buff), 0);
   if(nbytes <= 0){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
     #endif
-    fclose(img);
+    close(img);
     close(peer_socket);
     return 0;
   }
@@ -280,9 +309,8 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     printf("\tDEBUG: DECODED FILEID %s\n", buff);
   #endif
 
-  fclose(img);
+  close(img);
   close(peer_socket);
-  free(buffer);
   return strtoul(photoid, NULL, 0);
 
 }
@@ -637,9 +665,6 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   char query_buff[100], buff[100];
   int nbytes;
-  unsigned long filesize;
-  char answer[10];
-  char photo_name[100];
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
@@ -693,39 +718,30 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
 
   }
 
+  size_t len;
+  char buffer[BUFSIZ];
+  int file_size;
+  int remain_data = 0;
 
-  sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
+  //recv(client_fd, buffer, filesize, 0);
+  recv(peer_socket, buffer, BUFSIZ, 0);
+  file_size = atoi(buffer);
+  FILE *img = fopen(file_name, "w");
+  if (img == NULL){
+    fprintf(stderr, "Failed to open file foo --> %s\n", strerror(errno));
 
-  FILE *img = fopen(file_name, "wb");
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
-  int i,j,k;
-  k=0;
-  int rcv_size, act_rcv_size;
-  rcv_size=act_rcv_size=0;
-  //nbytes = recv(peer_socket, buffer, filesize, 0);
-
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
+    exit(EXIT_FAILURE);
   }
 
+  remain_data = file_size;
 
-  fwrite(buffer,1,filesize,img);
+  while ((remain_data > 0)){
+    len = recv(peer_socket, buffer, BUFSIZ, 0);
+    fwrite(buffer, sizeof(char), len, img);
+    remain_data -= len;
+    fprintf(stdout, "Receive %zu bytes and we hope :- %d bytes\n", len, remain_data);
+  }
+
   fclose(img);
 
   close(peer_socket);
