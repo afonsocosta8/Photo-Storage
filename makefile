@@ -2,8 +2,10 @@ all:
 	gcc -Wall -pthread data_structs.c gateway.c -o gateway
 	gcc -Wall client.c photostorageapi.c data_structs.c -o client
 	gcc -Wall -pthread peer.c data_structs.c -o peer
+	gcc -Wall client2.c photostorageapi.c data_structs.c -o client2
 debug:
 	gcc -Wall -g -DDEBUG  photostorageapi.c data_structs.c client.c -o client
+	gcc -Wall -g -DDEBUG  photostorageapi.c data_structs.c client2.c -o client2
 	gcc -Wall -g -pthread -DDEBUG data_structs.c gateway.c -o gateway
 	gcc -Wall -g -pthread -DDEBUG data_structs.c peer.c -o peer
 afonso:
