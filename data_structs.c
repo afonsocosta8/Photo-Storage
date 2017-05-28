@@ -302,7 +302,7 @@ int delete_photo_hash(photo_hash_table *table, uint32_t id){
 
   }
   return 0;
-  
+
 }
 
 
@@ -490,6 +490,7 @@ char** get_all_peers(peer_list *list, int* total){
 int remove_peer(peer_list *list, char *ip, int port){
 
   pthread_mutex_lock(&(list->lock));
+
   peer *actual;
   peer *previous;
 
@@ -529,6 +530,9 @@ int remove_peer(peer_list *list, char *ip, int port){
           printf("\t\t\tDEBUG: PUTTING LAST ELEMENT AND BEGINNING POINTING TO 2ND ELEMENT OF THE LIST \n");
         #endif
         last->next = list->beginning = actual->next;
+        if(list->next_to_use == actual){
+          list->next_to_use = NULL;
+        }
       }
 
       // free element we want to remove
@@ -551,15 +555,24 @@ int remove_peer(peer_list *list, char *ip, int port){
         #ifdef DEBUG
           printf("\t\t\tDEBUG: HANDLING POINTERS\n");
         #endif
+
         previous->next = actual->next;
+
+        if(list->next_to_use == actual){
+          list->next_to_use = NULL;
+        }
+
         #ifdef DEBUG
           printf("\t\t\tDEBUG: REMOVING IT\n");
         #endif
+
         free(actual);
         list->total--;
+
         #ifdef DEBUG
           printf("\t\t\tDEBUG: DONE. TOTAL ELEMENTS NOW: %d\n", list->total);
         #endif
+
         pthread_mutex_unlock(&(list->lock));
         return 1;
 
