@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include "photostorageapi.h"
 
+#define CHUNK_SIZE 512
 
 int gallery_connect(char * host, in_port_t p){
 
@@ -151,7 +152,6 @@ int gallery_connect(char * host, in_port_t p){
 
   return sock_fd;
 }
-
 
 
 uint32_t gallery_add_photo(int peer_socket, char *file_name){
@@ -697,35 +697,22 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
   sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
 
   FILE *img = fopen(file_name, "wb");
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
-  int i,j,k;
-  k=0;
-  int rcv_size, act_rcv_size;
-  rcv_size=act_rcv_size=0;
+
+  unsigned char buffer[CHUNK_SIZE];
+
+  int rcv_size=0;
+  int act_rcv_size = 0;
   //nbytes = recv(peer_socket, buffer, filesize, 0);
 
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
+  while(rcv_size < filesize){
+    act_rcv_size=recv(peer_socket, buffer, CHUNK_SIZE, 0);
     rcv_size=act_rcv_size+rcv_size;
     fwrite(buffer,1,act_rcv_size,img);
   }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
-    fwrite(buffer,1,act_rcv_size,img);
-  }
-
-
-
   fclose(img);
 
   close(peer_socket);
   return -1;
-
-
-
-
 
 
 

@@ -110,63 +110,42 @@ uint32_t get_photoid(char * host){
 
 void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize){
 
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
+  unsigned char buffer[CHUNK_SIZE];
   char towrite[100];
   int rcv_size=0;
   int act_rcv_size = 0;
-  int k = 0;
-  int i;
-  int j = 0;
 
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
 
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+  while(rcv_size < filesize){
+    act_rcv_size=recv(client_fd, buffer, CHUNK_SIZE, 0);
     rcv_size=act_rcv_size+rcv_size;
-    fwrite(buffer,1,act_rcv_size,img);
-
-
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
     fwrite(buffer,1,act_rcv_size,img);
   }
 
 
   fclose(img);
-  free(buffer);
 }
 
 uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
 
-  unsigned char *buffer = malloc(filesize);
-  unsigned char auxbuffer[1000];
+  unsigned char buffer[CHUNK_SIZE];
   char towrite[100];
   uint32_t photo_id;
   //sprintf(towrite, "%s", photo_name);
   //FILE *img = fopen(towrite, "wb");
   int rcv_size=0;
   int act_rcv_size = 0;
-  int k = 0;
-  int i;
-  int j = 0;
 
 
   photo_id=get_photoid(host);
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
 
-  //recv(client_fd, buffer, filesize, 0);
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+  while(rcv_size < filesize){
+    act_rcv_size=recv(client_fd, buffer, CHUNK_SIZE, 0);
     rcv_size=act_rcv_size+rcv_size;
-    fwrite(buffer,1,act_rcv_size,img);
-  }
-  if(rcv_size!=filesize){
-    j=0;
     fwrite(buffer,1,act_rcv_size,img);
   }
 
@@ -176,7 +155,6 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   fclose(img);
 
   add_photo_hash_table(table, photo_name, photo_id);
-  free(buffer);
   return photo_id;
 }
 

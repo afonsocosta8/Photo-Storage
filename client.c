@@ -158,6 +158,25 @@ int main(int argc, char const *argv[]) {
 
   getchar();
 
+
+  psock = gallery_connect(host, p);
+
+  if(psock>0){
+    gallery_get_photo( psock, photo_id1, "MPI.png");
+  }
+  getchar();
+  psock = gallery_connect(host, p);
+
+  if(psock>0){
+    gallery_get_photo( psock, photo_id2, "TABELA.png");
+  }
+  getchar();
+  psock = gallery_connect(host, p);
+
+  if(psock>0){
+    gallery_get_photo( psock, photo_id3, "MANEL.png");
+  }
+  getchar();
   psock = gallery_connect(host, p);
 
   if(psock>0){
@@ -177,6 +196,7 @@ int main(int argc, char const *argv[]) {
   if(psock>0){
     gallery_delete_photo(psock, photo_id3);
   }
+
 
   return 0;
 }
