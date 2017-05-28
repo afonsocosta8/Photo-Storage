@@ -118,31 +118,23 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
   int k = 0;
   int i;
   int j = 0;
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-  }
-
-
 
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
 
-  fwrite(buffer,1,filesize,img);
+  while(rcv_size < filesize-1000){
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    rcv_size=act_rcv_size+rcv_size;
+    fwrite(buffer,1,act_rcv_size,img);
+
+
+  }
+  if(rcv_size!=filesize){
+    j=0;
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    fwrite(buffer,1,act_rcv_size,img);
+  }
+
 
   fclose(img);
   free(buffer);
@@ -162,32 +154,24 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   int i;
   int j = 0;
 
-  //recv(client_fd, buffer, filesize, 0);
-  while(rcv_size < filesize-1000){
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
-  }
-  if(rcv_size!=filesize){
-    j=0;
-    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-  }
-
 
   photo_id=get_photoid(host);
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
 
-  fwrite(buffer,1,filesize,img);
+  //recv(client_fd, buffer, filesize, 0);
+  while(rcv_size < filesize-1000){
+    act_rcv_size=recv(client_fd, auxbuffer, 1000, 0);
+    rcv_size=act_rcv_size+rcv_size;
+    fwrite(buffer,1,act_rcv_size,img);
+  }
+  if(rcv_size!=filesize){
+    j=0;
+    fwrite(buffer,1,act_rcv_size,img);
+  }
+
+
+
 
   fclose(img);
 

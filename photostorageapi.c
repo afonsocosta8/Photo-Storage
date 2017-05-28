@@ -708,24 +708,16 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
   while(rcv_size < filesize-1000){
     act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
     rcv_size=act_rcv_size+rcv_size;
-    j=0;
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
-    k++;
+    fwrite(buffer,1,act_rcv_size,img);
   }
   if(rcv_size!=filesize){
     j=0;
     act_rcv_size=recv(peer_socket, auxbuffer, 1000, 0);
-    for(i = 1000*k;i<1000*k + act_rcv_size;i++){
-      buffer[i] = auxbuffer[j];
-      j++;
-    }
+    fwrite(buffer,1,act_rcv_size,img);
   }
 
 
-  fwrite(buffer,1,filesize,img);
+
   fclose(img);
 
   close(peer_socket);
