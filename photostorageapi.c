@@ -248,7 +248,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
   // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
-  fread(buffer, sizeof *buffer, filesize, img);
+  fread(buffer, sizeof(char), filesize, img); // nota
 
   if(send(peer_socket, buffer, filesize, 0)==-1){
     #ifdef DEBUG

@@ -235,7 +235,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   #endif
 
   unsigned char *buffer = malloc(filesize);
-  fread(buffer, sizeof *buffer, filesize, img);
+  fread(buffer, sizeof(char), filesize, img);
 
   if(send(client_fd, buffer, filesize, 0)==-1){
     #ifdef DEBUG
@@ -379,7 +379,7 @@ void * handle_client(void * arg){
           size_t filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
           unsigned char *buffer = (unsigned char *)malloc(filesize);
-          fread(buffer, sizeof *buffer, filesize, img);
+          fread(buffer, sizeof(char), filesize, img);
           sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
 
           nbytes = send(brother_sock, buff, strlen(buff)+1, 0);
@@ -882,7 +882,7 @@ void * handle_client(void * arg){
           filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
           buffer = (unsigned char *)malloc(filesize);
-          fread(buffer, sizeof *buffer, filesize, img);
+          fread(buffer, sizeof(char), filesize, img);
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
