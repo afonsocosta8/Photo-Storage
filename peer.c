@@ -589,7 +589,16 @@ void * handle_client(void * arg){
     }else{
       char * buffer = malloc(12*num_ids);
       key_word *aux;
-      sprintf(buffer, "OK ");
+
+      sprintf(buffer,"OK %d", num_ids);
+
+      nbytes = send(client_fd, buffer, strlen(buffer)+1, 0);
+
+      #ifdef DEBUG
+        printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buffer);
+      #endif
+
+      sprintf(buffer, "IDS ");
       if(ids_list->list!=NULL){
         for(aux=ids_list->list; aux!=NULL; aux=aux->next){
           sprintf(buffer+strlen(buffer), "%s ", aux->key);

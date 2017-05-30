@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]) {
   }
   char **name = (char**)malloc(sizeof(char*));
   *name = (char*)malloc(100);
-  uint32_t **ids = (uint32_t**)malloc(sizeof(uint32_t*));
+  uint32_t **ids = (uint32_t**)malloc(sizeof(uint32_t**));
   p=atoi(port);
   int photo_id1;
   char photo_name[100];
@@ -79,6 +79,7 @@ int main(int argc, char const *argv[]) {
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "getphoto")==0){
       printf("enter the id and name[by this order and spaced]:\n");
       fscanf(stdin, "%d %s", &photo_id1, photo_name);
@@ -97,6 +98,7 @@ int main(int argc, char const *argv[]) {
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "getname")==0){
       printf("enter the photo id:\n");
       fscanf(stdin, "%d", &photo_id1);
@@ -115,6 +117,7 @@ int main(int argc, char const *argv[]) {
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "addkeyword")==0){
       printf("enter the photo id and keyword to add[by this order and spaced]:\n");
       fscanf(stdin, "%d %s", &photo_id1, keyword);
@@ -133,17 +136,30 @@ int main(int argc, char const *argv[]) {
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "search")==0){
       printf("enter the keyword:\n");
       fscanf(stdin, "%s", keyword);
       psock = gallery_connect(host, p);
       if(psock>0){
         ret = gallery_search_photo(psock, keyword, ids);
+        if (ret==0) {
+          printf("\nNo photo contains the provided keyword\n\n");
+        }else if (ret==-1) {
+          printf("\nInvalid arguments or network problem\n\n");
+        }else{
+          printf("\nFound photos with ids ");
+          for(i=0;i<ret;i++){
+            printf("%u, ", (*ids)[i]);
+          }
+          printf("\n\n");
+        }
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "delete")==0){
       printf("enter the photo id:\n");
       fscanf(stdin, "%d", &photo_id1);
@@ -162,18 +178,18 @@ int main(int argc, char const *argv[]) {
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
+      close(psock);
     }else if(strcmp(query, "quit")==0){
       printf("Goodbye\n");
-      close(psock);
       return 0;
     }else{
       printf("\n\"%s\" command is not valid\n\n", query);
     }
   }
-
-  close(psock);
+  free(name);
+  free(*name);
+  free(ids);
 
 
   return 0;
 }
-

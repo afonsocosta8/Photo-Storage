@@ -38,7 +38,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT CREATE SOCKET\n");
     #endif
-    return 0;
+    return -1;
   }
 
   #ifdef DEBUG
@@ -67,7 +67,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\tDEBUG: GATEWAY UNAVAILABLE.\n");
     #endif
-
+    close(sock_fd);
     return -1;
   }
 
@@ -84,6 +84,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\tDEBUG: COULD NOT RECV MESSAGE FROM GATEWAY.\n");
     #endif
+    close(sock_fd);
     return -1;
   }
 
@@ -97,6 +98,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\tDEBUG: NO PEERS AVAILABLE\n");
     #endif
+    close(sock_fd);
     return 0;
   }
 
@@ -143,6 +145,7 @@ int gallery_connect(char * host, in_port_t p){
     #ifdef DEBUG
       printf("\tDEBUG: ERROR CONNECTING TO PEER %s:%s\n", ip, port);
     #endif
+    close(sock_fd);
 		return 0;
 	}
 
@@ -168,8 +171,10 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
   #endif
 
   FILE *img = fopen(file_name, "rb");
-  if(img == NULL)
+  if(img == NULL){
+    close(peer_socket);
     return 0;
+  }
 
 
   // OPENING FILE
@@ -190,7 +195,6 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
 
   // PREPARING PROTOCOL MESSAGE TO PEER
-   printf("starting strtok\n");
    token = strtok(f_name, "/");
 
    /* walk through other tokens */
@@ -200,7 +204,6 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
       previous = token;
       token = strtok(NULL, "/");
    }
-   printf("Filename is: %s\n", previous);
 
 
   sprintf(buff, "ADDPHOTO %s %zu", previous, filesize);
@@ -256,6 +259,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     #endif
     fclose(img);
     close(peer_socket);
+    free(buffer);
     return 0;
   }
   nbytes = 0;
@@ -266,6 +270,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
     #endif
     fclose(img);
     close(peer_socket);
+    free(buffer);
     return 0;
   }
 
@@ -375,7 +380,6 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
   char query_buff[100], buff[100], answer[10];
   int num_photo_ids;
-  char photo_ids[100];
   int nbytes;
 
   // PREPARING PROTOCOL MESSAGE TO PEER
@@ -431,13 +435,46 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
   }
 
-  sscanf(buff, "%s %d %s", answer, &num_photo_ids, photo_ids);
+  uint32_t act_id;
+  int k = 0;
+  char *token;
+
+  sscanf(buff, "%s %d", answer, &num_photo_ids);
+  *id_photo = (uint32_t*)malloc(sizeof(uint32_t)*num_photo_ids);
   if(strcmp(answer, "OK")==0){
 
     #ifdef DEBUG
       printf("\tDEBUG: ALL OK. DECONDING PHOTO_IDs NOW\n");
     #endif
 
+    nbytes = recv(peer_socket, buff, sizeof(buff), 0);
+    if(nbytes <= 0){
+      #ifdef DEBUG
+        printf("\tDEBUG: COULD NOT RECV MESSAGE FROM PEER\n");
+      #endif
+      close(peer_socket);
+      return -1;
+    }
+    char *sids = buff + 4;
+    #ifdef DEBUG
+      printf("\tDEBUG: %dB RECV --- %s ---\n", nbytes, sids);
+    #endif
+
+    token = strtok(sids, " ");
+
+   /* walk through other tokens */
+    while( token != NULL ) {
+      //printf( " %s\n", token );
+      act_id = (uint32_t)atoi(token);
+      (*id_photo)[k]=act_id;
+      token = strtok(NULL, " ");
+      k++;
+    }
+
+
+    /*#ifdef DEBUG
+      printf("\tDEBUG: %d IDS --- %s ---\n", num_photo_ids, photo_ids);
+    #endif*/
 
     // FAZER STRTOK COM PHOTO_IDS PARA IR BUSCAR CADA UM DELES
     // RESPONSE: OK <num_ids> <photo_id1> .. <photo_idn>
@@ -688,28 +725,31 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
     #ifdef DEBUG
       printf("\tDEBUG: PHOTO NOT FOUND\n");
     #endif
-
+    close(peer_socket);
     return 0;
 
   }
 
 
   sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
+  if(strcmp(answer, "OK")==0){
+    FILE *img = fopen(file_name, "wb");
 
-  FILE *img = fopen(file_name, "wb");
+    unsigned char buffer[CHUNK_SIZE];
 
-  unsigned char buffer[CHUNK_SIZE];
+    int rcv_size=0;
+    int act_rcv_size = 0;
+    //nbytes = recv(peer_socket, buffer, filesize, 0);
 
-  int rcv_size=0;
-  int act_rcv_size = 0;
-  //nbytes = recv(peer_socket, buffer, filesize, 0);
-
-  while(rcv_size < filesize){
-    act_rcv_size=recv(peer_socket, buffer, CHUNK_SIZE, 0);
-    rcv_size=act_rcv_size+rcv_size;
-    fwrite(buffer,1,act_rcv_size,img);
+    while(rcv_size < filesize){
+      act_rcv_size=recv(peer_socket, buffer, CHUNK_SIZE, 0);
+      rcv_size=act_rcv_size+rcv_size;
+      fwrite(buffer,1,act_rcv_size,img);
+    }
+    close(peer_socket);
+    fclose(img);
+    return 1;
   }
-  fclose(img);
 
   close(peer_socket);
   return -1;
