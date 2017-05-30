@@ -107,6 +107,10 @@ void remove_peer_list(peer_list *list, char *ip, int port){
 
     // INFORMING OTHER PEERS TO REMOVE THAT PEER
     args_remv_peer * args = (args_remv_peer*)malloc(sizeof(args_remv_peer));
+    if(args == NULL){
+      printf("COULD NOT ALLOCATE MEMORY\n");
+      exit(-1);
+    }
     strcpy(args->ip, ip);
     args->port = port;
     args->list = list;
@@ -404,6 +408,10 @@ void * handle_reg(void * arg){
 
   char resp_numpeers[20];
   resp_buff = (char*)malloc(sizeof(char)*(22*total_peers)+1);
+  if(resp_buff == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
 
   sprintf(resp_numpeers, "OK %d", total_peers);
   nbytes = sendto(resp_fd, resp_numpeers, strlen(resp_numpeers)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
@@ -497,6 +505,10 @@ void * handle_ticket(void * arg){
         #endif
 
         args *arguments= (args*)malloc(sizeof(args));
+        if(arguments == NULL){
+          printf("COULD NOT ALLOCATE MEMORY\n");
+          exit(-1);
+        }
         arguments->client_addr = client_addr;
         arguments->list = list;
 
@@ -536,6 +548,10 @@ void * handle_ticket(void * arg){
         #endif
 
         args *arguments= (args*)malloc(sizeof(args));
+        if(arguments == NULL){
+          printf("COULD NOT ALLOCATE MEMORY\n");
+          exit(-1);
+        }
         arguments->client_addr = client_addr;
         arguments->list = list;
 
@@ -633,6 +649,11 @@ int main(){
         #endif
 
         args *arguments= (args*)malloc(sizeof(args));
+        if(arguments == NULL){
+          printf("COULD NOT ALLOCATE MEMORY\n");
+          exit(-1);
+        }
+
         arguments->client_addr = client_addr;
         arguments->list = list;
 

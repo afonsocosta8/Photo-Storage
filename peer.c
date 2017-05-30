@@ -117,6 +117,10 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
 
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
+  if(img == NULL){
+    printf("COULD NOT OPEN FILE\n");
+    exit(-1);
+  }
 
   while(rcv_size < filesize){
     act_rcv_size=recv(client_fd, buffer, CHUNK_SIZE, 0);
@@ -142,6 +146,10 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   photo_id=get_photoid(host);
   sprintf(towrite, "%u", photo_id);
   FILE *img = fopen(towrite, "wb");
+  if(img == NULL){
+    printf("COULD NOT OPEN FILE\n");
+    exit(-1);
+  }
 
   while(rcv_size < filesize){
     act_rcv_size=recv(client_fd, buffer, CHUNK_SIZE, 0);
@@ -207,8 +215,10 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   sprintf(file_name, "%d", photo_id);
 
   FILE *img = fopen(file_name, "rb");
-  if(img == NULL)
-    return 0;
+  if(img == NULL){
+    printf("COULD NOT OPEN FILE\n");
+    exit(-1);
+  }
 
 
   // GET FILE CHARECTERISTICS
@@ -235,6 +245,10 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   #endif
 
   unsigned char *buffer = malloc(filesize);
+  if(buffer == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
   fread(buffer, sizeof(char), filesize, img);
 
   if(send(client_fd, buffer, filesize, 0)==-1){
@@ -375,10 +389,18 @@ void * handle_client(void * arg){
           char file_name[100];
           sprintf(file_name, "%u", photo_id);
           FILE *img = fopen(file_name, "rb");
+          if(img == NULL){
+            printf("COULD NOT OPEN FILE\n");
+            exit(-1);
+          }
           fseek(img, 0, SEEK_END);
           size_t filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
           unsigned char *buffer = (unsigned char *)malloc(filesize);
+          if(buffer == NULL){
+            printf("COULD NOT ALLOCATE MEMORY\n");
+            exit(-1);
+          }
           fread(buffer, sizeof(char), filesize, img);
           sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
 
@@ -588,6 +610,10 @@ void * handle_client(void * arg){
 
     }else{
       char * buffer = malloc(12*num_ids);
+      if(buffer == NULL){
+        printf("COULD NOT ALLOCATE MEMORY\n");
+        exit(-1);
+      }
       key_word *aux;
 
       sprintf(buffer,"OK %d", num_ids);
@@ -887,10 +913,18 @@ void * handle_client(void * arg){
         for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
           sprintf(file_name, "%u", aux->id);
           img = fopen(file_name, "rb");
+          if(file_name == NULL){
+            printf("COULD NOT OPEN FILE\n");
+            exit(-1);
+          }
           fseek(img, 0, SEEK_END);
           filesize = ftell(img);
           fseek(img, 0, SEEK_SET);
           buffer = (unsigned char *)malloc(filesize);
+          if(buffer == NULL){
+            printf("COULD NOT ALLOCATE MEMORY\n");
+            exit(-1);
+          }
           fread(buffer, sizeof(char), filesize, img);
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
@@ -1060,6 +1094,10 @@ void * handle_alive(void * arg){
     printf("THERE ARE %d ACTIVE PEERS\n", num_peers);
     if(num_peers!=0){
       char * active_peers = (char*)malloc((sizeof(char)*22*num_peers)+1);
+      if(active_peers == NULL){
+        printf("COULD NOT ALLOCATE MEMORY\n");
+        exit(-1);
+      }
       nbytes = 0;
       nbytes = recv(sock_fd, active_peers, 22*num_peers+1 , 0);
       if(nbytes<=0) {
@@ -1398,6 +1436,10 @@ int main(int argc, char const *argv[]) {
         if(num_keys != 0){
 
           keys = (char *)malloc(sizeof(char)*22*num_keys);
+          if(keys == NULL){
+            printf("COULD NOT ALLOCATE MEMORY\n");
+            exit(-1);
+          }
           nbytes = recv(brother_sock, keys, 22*num_keys, 0);
 
           if(nbytes<=0) {
@@ -1477,6 +1519,10 @@ int main(int argc, char const *argv[]) {
   #endif
 
   args_regpeer *arguments = (args_regpeer*)malloc(sizeof(args_regpeer));
+  if(arguments == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
   arguments->mp = mp;
   arguments->p = p;
   arguments->list = brothers;
@@ -1542,6 +1588,10 @@ int main(int argc, char const *argv[]) {
 
 
     arguments1 = (args_client*)malloc(sizeof(args_client));
+    if(arguments1 == NULL){
+      printf("COULD NOT ALLOCATE MEMORY\n");
+      exit(-1);
+    }
     arguments1->table = photos;
     arguments1->host = host;
     arguments1->brothers = brothers;

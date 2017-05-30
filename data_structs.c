@@ -17,6 +17,11 @@
 keyword_list *init_keyword_list(){
 
   keyword_list *keys = (keyword_list*)malloc(sizeof(keyword_list));
+  if(keys == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   keys->list = NULL;
   keys->total =0;
@@ -27,6 +32,11 @@ keyword_list *init_keyword_list(){
 void add_keyword_list(keyword_list *keys, char *key){
 
   key_word *new = (key_word*)malloc(sizeof(key_word));
+  if(new == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   strcpy(new->key, key);
   new->next = NULL;
@@ -94,6 +104,11 @@ void free_keyword_list(keyword_list *list){
 photo_list *init_photo_list(){
 
   photo_list *photos = (photo_list*)malloc(sizeof(photo_list));
+  if(photos == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   photos->list = NULL;
   photos->total = 0;
@@ -108,6 +123,11 @@ void add_photo(photo_list *photos, char *name, uint32_t id){
 
   pthread_mutex_lock(&(photos->lock));
   photo *new = (photo*)malloc(sizeof(photo));
+  if(new == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   strcpy(new->name, name);
   new->id       = id;
@@ -265,10 +285,20 @@ int get_hash_key(photo_hash_table *table, int id){
 photo_hash_table * create_hash_table(int size){
 
   photo_hash_table* new = malloc(sizeof(photo_hash_table));
+  if(new == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
   int i;
   new->total = 0;
   new->size = size;
   new->table = malloc(sizeof(photo_list)*size);
+  if(new->table == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
   for(i=0; i<size; i++)
     new->table[i] = init_photo_list();
 
@@ -370,6 +400,11 @@ int main(){
 peer_list *init_peer_list(){
 
   peer_list *list = (peer_list*)malloc(sizeof(peer_list));
+  if(list == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   list->next_to_use = NULL;
   list->beginning = NULL;
@@ -385,6 +420,11 @@ void add_peer_list(peer_list *list, char *ip, int port){
   pthread_mutex_lock(&(list->lock));
 
   peer *new = (peer*)malloc(sizeof(peer));
+  if(new == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   strcpy(new->ip, ip);
   new->port = port;
@@ -469,10 +509,20 @@ char** get_all_peers(peer_list *list, int* total){
     peer *aux;
     int i;
     char** peers = (char**)malloc(sizeof(char*)*list->total);
+    if(peers == NULL){
+      printf("COULD NOT ALLOCATE MEMORY\n");
+      exit(-1);
+    }
 
 
-    for(i=0; i<list->total; i++)
+
+    for(i=0; i<list->total; i++){
       peers[i] = (char*)malloc(sizeof(char)*25);
+      if(peers[i] == NULL){
+        printf("COULD NOT ALLOCATE MEMORY\n");
+        exit(-1);
+      }
+    }
 
     sprintf(peers[0], "%s %d", list->beginning->ip, list->beginning->port);
     if(list->beginning!=list->beginning->next){
@@ -612,6 +662,11 @@ void free_peer_list(peer_list *list){
 brother_list *init_brother_list(){
 
   brother_list *list = (brother_list*)malloc(sizeof(brother_list));
+  if(list == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   list->first = NULL;
   list->last = NULL;
@@ -625,6 +680,11 @@ void add_brother_list(brother_list *list, char *ip, int port){
   pthread_mutex_lock(&(list->lock));
 
   peer *new = (peer*)malloc(sizeof(peer));
+  if(new == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
+
 
   strcpy(new->ip, ip);
   new->port = port;
@@ -730,10 +790,21 @@ char **get_all_brothers(brother_list *list, int *total){
     peer *aux;
     int i;
     char **brothers = (char**)malloc(sizeof(char*)*list->total);
+    if(brothers == NULL){
+      printf("COULD NOT ALLOCATE MEMORY\n");
+      exit(-1);
+    }
 
 
-    for(i=0; i<list->total; i++)
+
+    for(i=0; i<list->total; i++){
       brothers[i] = (char*)malloc(sizeof(char)*25);
+      if(brothers[i] == NULL){
+        printf("COULD NOT ALLOCATE MEMORY\n");
+        exit(-1);
+      }
+    }
+
 
     if(list->first!=NULL)
       for(i=0, aux = list->first; aux != NULL; aux=aux->next, i++)

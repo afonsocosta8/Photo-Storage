@@ -251,6 +251,10 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
 
   // STORE READ DARA INTO BUFFER
   unsigned char *buffer = malloc(filesize);
+  if(buffer == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
   fread(buffer, sizeof(char), filesize, img); // nota
 
   if(send(peer_socket, buffer, filesize, 0)==-1){
@@ -441,6 +445,10 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
   sscanf(buff, "%s %d", answer, &num_photo_ids);
   *id_photo = (uint32_t*)malloc(sizeof(uint32_t)*num_photo_ids);
+  if(id_photo == NULL){
+    printf("COULD NOT ALLOCATE MEMORY\n");
+    exit(-1);
+  }
   if(strcmp(answer, "OK")==0){
 
     #ifdef DEBUG
@@ -734,6 +742,10 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
   sscanf(buff, "%s %s %lu", answer, photo_name, &filesize);
   if(strcmp(answer, "OK")==0){
     FILE *img = fopen(file_name, "wb");
+    if(img == NULL){
+      printf("COULD NOT OPEN FILE\n");
+      exit(-1);
+    }
 
     unsigned char buffer[CHUNK_SIZE];
 
