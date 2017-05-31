@@ -45,13 +45,13 @@ int gallery_connect(char * host, in_port_t p){
     return -1;
   }
 
-  /*if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
+  if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
     perror("ERROR SETTING SOCKET OPTS\n");
     #ifdef DEBUG
       printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
     #endif
     return -1;
-  }*/
+  }
 
   #ifdef DEBUG
     printf("\tDEBUG: SOCKET No: %d\n", sock_fd);

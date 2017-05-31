@@ -75,12 +75,12 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\nInvalid file_name or problems in communication with the server\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "getphoto")==0){
       printf("enter the id and name[by this order and spaced]:\n");
       fscanf(stdin, "%d %s", &photo_id1, photo_name);
@@ -94,12 +94,12 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\ninvalid arguments or network problem\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "getname")==0){
       printf("enter the photo id:\n");
       fscanf(stdin, "%d", &photo_id1);
@@ -113,12 +113,12 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\ninvalid arguments or network problem\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "addkeyword")==0){
       printf("enter the photo id and keyword to add[by this order and spaced]:\n");
       fscanf(stdin, "%d %s", &photo_id1, keyword);
@@ -132,12 +132,12 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\ninvalid arguments or network problem\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "search")==0){
       printf("enter the keyword:\n");
       fscanf(stdin, "%s", keyword);
@@ -155,12 +155,12 @@ int main(int argc, char const *argv[]) {
           }
           printf("\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "delete")==0){
       printf("enter the photo id:\n");
       fscanf(stdin, "%d", &photo_id1);
@@ -174,12 +174,12 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\ninvalid arguments or network problem\n\n");
         }
+	close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{
         printf("\nGateway cannot be accessed\n\n");
       }
-      close(psock);
     }else if(strcmp(query, "quit")==0){
       printf("Goodbye\n");
       return 0;
