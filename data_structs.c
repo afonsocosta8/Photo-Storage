@@ -414,38 +414,72 @@ peer_list *init_peer_list(){
 
 }
 
-void add_peer_list(peer_list *list, char *ip, int port){
-  
+int find_peer(peer_list *list, char *ip, int port){
 
   pthread_mutex_lock(&(list->lock));
 
-  peer *new = (peer*)malloc(sizeof(peer));
-  if(new == NULL){
-    printf("COULD NOT ALLOCATE MEMORY\n");
-    exit(-1);
+
+  if(list->beginning!=NULL){
+    peer *actual;
+    #ifdef DEBUG
+      printf("\t\t\tDEBUG: IS PEER ON THE BEGINING OF THE LIST?\n");
+    #endif
+    actual = list->beginning;
+
+    if(strcmp(ip, actual->ip)==0 && port==actual->port){
+      pthread_mutex_unlock(&(list->lock));
+      return 1;
+
+    }
+    else{
+      for(actual = list->beginning->next; actual != list->beginning && !(strcmp(ip, actual->ip)==0 && port==actual->port); actual=actual->next);
+
+      if(actual != list->beginning){
+
+        pthread_mutex_unlock(&(list->lock));
+        return 1;
+
+      }
+    }
   }
-
-
-  strcpy(new->ip, ip);
-  new->port = port;
-  new->next = NULL;
-  list->total++;
-
-  if(list->beginning == NULL){
-
-    list->beginning = new;
-    new->next = new;
-
-  }else{
-
-    peer * aux;
-    for(aux = list->beginning; aux->next != list->beginning; aux=aux->next);
-    new ->next = list->beginning;
-    aux->next = new;
-
-  }
-
   pthread_mutex_unlock(&(list->lock));
+  return 0;
+
+}
+void add_peer_list(peer_list *list, char *ip, int port){
+
+  if(!find_peer(list, ip, port)){
+
+    pthread_mutex_lock(&(list->lock));
+
+    peer *new = (peer*)malloc(sizeof(peer));
+    if(new == NULL){
+      printf("COULD NOT ALLOCATE MEMORY\n");
+      exit(-1);
+    }
+
+
+    strcpy(new->ip, ip);
+    new->port = port;
+    new->next = NULL;
+    list->total++;
+
+    if(list->beginning == NULL){
+
+      list->beginning = new;
+      new->next = new;
+
+    }else{
+
+      peer * aux;
+      for(aux = list->beginning; aux->next != list->beginning; aux=aux->next);
+      new ->next = list->beginning;
+      aux->next = new;
+
+    }
+
+    pthread_mutex_unlock(&(list->lock));
+  }
 }
 
 void print_peer_list(peer_list *list){
@@ -536,6 +570,8 @@ char** get_all_peers(peer_list *list, int* total){
   pthread_mutex_unlock(&(list->lock));
   return NULL;
 }
+
+
 
 int remove_peer(peer_list *list, char *ip, int port){
 
