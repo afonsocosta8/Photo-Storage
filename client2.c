@@ -63,6 +63,7 @@ int main(int argc, char const *argv[]) {
     printf("**************************************************************************************************\n\n");
     printf("Enter command: ");
     fscanf(stdin, "%s", query);
+    getchar();
     if(strcmp(query, "addphoto")==0){
       printf("enter the photo name:\n");
       fscanf(stdin, "%s", photo_name);
@@ -185,6 +186,7 @@ int main(int argc, char const *argv[]) {
     }else{
       printf("\n\"%s\" command is not valid\n\n", query);
     }
+    strcpy(query, "");
   }
   free(name);
   free(*name);

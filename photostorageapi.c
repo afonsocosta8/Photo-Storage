@@ -26,6 +26,10 @@ int gallery_connect(char * host, in_port_t p){
   char *pt;
   int sock_fd;
 
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 500000;
+
 
   // CREATING SOCKET FOR CONNECTIONS
   #ifdef DEBUG
@@ -40,6 +44,14 @@ int gallery_connect(char * host, in_port_t p){
     #endif
     return -1;
   }
+
+  /*if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0){
+    perror("ERROR SETTING SOCKET OPTS\n");
+    #ifdef DEBUG
+      printf("\t\tDEBUG: COULD NOT SET SOCKET OPTS\n");
+    #endif
+    return -1;
+  }*/
 
   #ifdef DEBUG
     printf("\tDEBUG: SOCKET No: %d\n", sock_fd);
@@ -101,7 +113,10 @@ int gallery_connect(char * host, in_port_t p){
     close(sock_fd);
     return 0;
   }
-
+  if(strstr(buff,"OK")==NULL){
+    close(sock_fd);
+    return -1;
+  }
   // HANDLING IP AND PORT
   ipport = buff + 3;
   int i = 0;
