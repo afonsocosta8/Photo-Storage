@@ -49,21 +49,19 @@ int main(int argc, char const *argv[]) {
   char keyword[20];
   char query[15];
   int ret;
-
-  while (1) {
-    printf("**************************************************************************************************\n*\n");
-    printf("*        Options:\n*\n");
-    printf("*            addphoto - add a photo to the database\n*\n");
-    printf("*            getphoto - get a photo from the data base[you must provide the id and name]\n*\n");
-    printf("*            getname - get the name of a photo[you must provide the id]\n*\n");
-    printf("*            addkeyword - add a keyword to a photo[you must provide the keyword a photo id]\n*\n");
-    printf("*            search - search for a photo by keyword[you must provide the keyword]\n*\n");
-    printf("*            delete - delete a photo from the database[you must provide the id]\n*\n");
-    printf("*            quit - exit the program\n*\n");
-    printf("**************************************************************************************************\n\n");
+  printf("**************************************************************************************************\n*\n");
+  printf("*        Options:\n*\n");
+  printf("*            addphoto - add a photo to the database\n*\n");
+  printf("*            getphoto - get a photo from the data base[you must provide the id and name]\n*\n");
+  printf("*            getname - get the name of a photo[you must provide the id]\n*\n");
+  printf("*            addkeyword - add a keyword to a photo[you must provide the keyword a photo id]\n*\n");
+  printf("*            search - search for a photo by keyword[you must provide the keyword]\n*\n");
+  printf("*            delete - delete a photo from the database[you must provide the id]\n*\n");
+  printf("*            quit - exit the program\n*\n");
+  printf("**************************************************************************************************\n\n");
+  while (1){
     printf("Enter command: ");
     fscanf(stdin, "%s", query);
-    getchar();
     if(strcmp(query, "addphoto")==0){
       printf("enter the photo name:\n");
       fscanf(stdin, "%s", photo_name);

@@ -108,7 +108,7 @@ uint32_t get_photoid(char * host){
 
 }
 
-void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize){
+uint32_t add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize){
 
   unsigned char buffer[CHUNK_SIZE];
   char towrite[100];
@@ -119,7 +119,7 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
   FILE *img = fopen(towrite, "wb");
   if(img == NULL){
     printf("COULD NOT OPEN FILE\n");
-    exit(-1);
+    return -1;
   }
 
   while(rcv_size < filesize){
@@ -130,6 +130,7 @@ void add_image_brother(int client_fd, uint32_t photo_id, unsigned long filesize)
 
 
   fclose(img);
+  return 1;
 }
 
 uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char *host, photo_hash_table *table){
@@ -148,7 +149,7 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
   FILE *img = fopen(towrite, "wb");
   if(img == NULL){
     printf("COULD NOT OPEN FILE\n");
-    exit(-1);
+    return -1;
   }
 
   while(rcv_size < filesize){
@@ -217,7 +218,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   FILE *img = fopen(file_name, "rb");
   if(img == NULL){
     printf("COULD NOT OPEN FILE\n");
-    exit(-1);
+    return -1;
   }
 
 
@@ -247,7 +248,7 @@ int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
   unsigned char *buffer = malloc(filesize);
   if(buffer == NULL){
     printf("COULD NOT ALLOCATE MEMORY\n");
-    exit(-1);
+    return 0;
   }
   fread(buffer, sizeof(char), filesize, img);
 
@@ -275,7 +276,6 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
       for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
         if(aux->keywords->list!=NULL)
           for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
-            printf("im here comparing %s with %s\n", aux1->key, keyword);
             if (strcmp(aux1->key, keyword)==0) {
               sprintf(id, "%d", aux->id);
               add_keyword_list(ids_list, id);
@@ -314,7 +314,20 @@ void * handle_client(void * arg){
   char buff[200];
   char answer[10];
   nbytes = recv(client_fd, client_query, 100, 0);
-  printf("received %d bytes --- %s ---\n", nbytes, client_query);
+  //printf("received %d bytes --- %s ---\n", nbytes, client_query);
+
+  if(nbytes <= 0){
+    #ifdef DEBUG
+      printf("\tDEBUG: COULD NOT RECV MESSAGE FROM CLIENT.\n");
+    #endif
+    close(client_fd);
+    return NULL;
+  }
+
+  // MESSAGE RECEIVED
+  #ifdef DEBUG
+    printf("\tDEBUG: %dB RECV FROM CLIENT: --- %s ---\n", nbytes,  client_query);
+  #endif
 
   if(strstr(client_query, "ADDPHOTO") != NULL) {
 
@@ -326,7 +339,19 @@ void * handle_client(void * arg){
 
     sprintf(buff, "OK");
     nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-    printf("replying %d bytes\n", nbytes);
+
+    if(nbytes==-1){
+
+      #ifdef DEBUG
+        printf("\tDEBUG: CLIENT UNAVAILABLE.\n");
+      #endif
+      close(client_fd);
+      return NULL;
+    }
+
+    #ifdef DEBUG
+      printf("\tDEBUG: SENT %dB TO CLIENT : --- %s ---\n", nbytes, buff);
+    #endif
 
     photo_id = add_image(client_fd, photo_name, filesize, host, table);
     if (photo_id!=0) {
@@ -348,8 +373,9 @@ void * handle_client(void * arg){
 
         brother_sock= socket(AF_INET, SOCK_STREAM, 0);
         if(brother_sock == -1){
-          perror("ERROR CREATING SOCKER\n");
-          exit(-1);
+          perror("ERROR CREATING SOCKET\n");
+          close(client_fd);
+          return NULL;
         }
 
         // PREPARING TO SEND MESSAGE TO GATEWAY
@@ -367,7 +393,9 @@ void * handle_client(void * arg){
           gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
           if(gw_sock == -1){
             perror("ERROR CREATING SOCKER\n");
-            exit(-1);
+            close(client_fd);
+            close(brother_sock);
+            return NULL;
           }
 
           sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
@@ -376,22 +404,28 @@ void * handle_client(void * arg){
           inet_aton(host, &gw_address.sin_addr);
           nbytes = sendto(gw_sock, peerdead, strlen(peerdead)+1,0, (const struct sockaddr *) &gw_address, sizeof(gw_address));
 
-          #ifdef DEBUG
-            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
-          #endif
 
           if(nbytes==-1){
             #ifdef DEBUG
               printf("\tDEBUG: MESSAGE NOT SENT\n");
             #endif
+            close(client_fd);
+            close(brother_sock);
+            close(gw_sock);
+            return NULL;
           }
+          #ifdef DEBUG
+            printf("\t\tDEBUG: SENT %dB TO GATEWAY %s:%d --- %s ---\n", nbytes, inet_ntoa(gw_address.sin_addr), ntohs(gw_address.sin_port), peerdead);
+          #endif
       	}else{
           char file_name[100];
           sprintf(file_name, "%u", photo_id);
           FILE *img = fopen(file_name, "rb");
           if(img == NULL){
             printf("COULD NOT OPEN FILE\n");
-            exit(-1);
+            close(client_fd);
+            close(brother_sock);
+            return NULL;
           }
           fseek(img, 0, SEEK_END);
           size_t filesize = ftell(img);
@@ -399,7 +433,10 @@ void * handle_client(void * arg){
           unsigned char *buffer = (unsigned char *)malloc(filesize);
           if(buffer == NULL){
             printf("COULD NOT ALLOCATE MEMORY\n");
-            exit(-1);
+            close(client_fd);
+            close(brother_sock);
+            fclose(img);
+            return NULL;
           }
           fread(buffer, sizeof(char), filesize, img);
           sprintf(buff, "RPLADD %s %d %zu", photo_name, photo_id, filesize);
@@ -412,6 +449,11 @@ void * handle_client(void * arg){
             #ifdef DEBUG
               printf("\tDEBUG: MESSAGE NOT SENT\n");
             #endif
+            close(client_fd);
+            close(brother_sock);
+            fclose(img);
+            free(buffer);
+            return NULL;
           }
           nbytes = recv(brother_sock, buff, 3, 0);
           #ifdef DEBUG
@@ -421,8 +463,11 @@ void * handle_client(void * arg){
             #ifdef DEBUG
               printf("\tDEBUG: COULD NOT SEND IMAGE TO PEER\n");
             #endif
+            close(client_fd);
+            close(brother_sock);
             fclose(img);
             free(buffer);
+            return NULL;
           }
         }
         close(brother_sock);
@@ -441,12 +486,14 @@ void * handle_client(void * arg){
 
 
 
-
     }else{
+      #ifdef DEBUG
+        printf("\t\tERROR. COULDN'T STORE PHOTO\n");
+      #endif
       printf("ERROR. COULDN'T STORE PHOTO\n");
       sprintf(buff, "ERROR");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
+      close(client_fd);
     }
 
   }else if(strstr(client_query, "ADDKEY") != NULL) {
@@ -483,7 +530,8 @@ void * handle_client(void * arg){
         brother_sock= socket(AF_INET, SOCK_STREAM, 0);
         if(brother_sock == -1){
           perror("ERROR CREATING SOCKER\n");
-          exit(-1);
+          close(client_fd);
+          return NULL;
         }
 
         // PREPARING TO SEND MESSAGE TO GATEWAY
@@ -504,7 +552,9 @@ void * handle_client(void * arg){
           gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
           if(gw_sock == -1){
             perror("ERROR CREATING SOCKER\n");
-            exit(-1);
+            close(brother_sock);
+            close(client_fd);
+            return NULL;
           }
 
           sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
@@ -521,6 +571,10 @@ void * handle_client(void * arg){
             #ifdef DEBUG
               printf("\tDEBUG: MESSAGE NOT SENT\n");
             #endif
+            close(gw_sock);
+            close(brother_sock);
+            close(client_fd);
+            return NULL;
           }
 
       	}else{
@@ -539,7 +593,9 @@ void * handle_client(void * arg){
             gw_sock = socket(AF_INET, SOCK_DGRAM, 0);
             if(gw_sock == -1){
               perror("ERROR CREATING SOCKER\n");
-              exit(-1);
+              close(brother_sock);
+              close(client_fd);
+              return NULL;
             }
 
             sprintf(peerdead, "RMV %s %d", brother_ip, brother_port);
@@ -556,6 +612,10 @@ void * handle_client(void * arg){
               #ifdef DEBUG
                 printf("\tDEBUG: MESSAGE NOT SENT\n");
               #endif
+              close(gw_sock);
+              close(brother_sock);
+              close(client_fd);
+              return NULL;
             }
           }
         }
@@ -607,12 +667,13 @@ void * handle_client(void * arg){
       #ifdef DEBUG
         printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
       #endif
-
+      free_keyword_list(ids_list);
     }else{
       char * buffer = malloc(12*num_ids);
       if(buffer == NULL){
         printf("COULD NOT ALLOCATE MEMORY\n");
-        exit(-1);
+        close(client_fd);
+        return NULL;
       }
       key_word *aux;
 
@@ -926,7 +987,9 @@ void * handle_client(void * arg){
             exit(-1);
           }
           fread(buffer, sizeof(char), filesize, img);
+          printf("olaaaa\n");
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
+          printf("adeeueeuuss\n");
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
             printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
