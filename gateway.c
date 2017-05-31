@@ -414,21 +414,21 @@ void * handle_reg(void * arg){
     printf("COULD NOT ALLOCATE MEMORY\n");
     exit(-1);
   }
-
+  int total_to_send = total_peers;
   if(total_peers!=0){
     for(i=0; i<total_peers; i++){
       if(strcmp(existing_peers[i], client)!=0){
         sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
 
       }else
-        total_peers--;
+        total_to_send--;
       free(existing_peers[i]);
     }
     free(existing_peers);
 
   }
 
-  sprintf(resp_numpeers, "OK %d", total_peers);
+  sprintf(resp_numpeers, "OK %d", total_to_send);
   nbytes = sendto(resp_fd, resp_numpeers, strlen(resp_numpeers)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_numpeers);
