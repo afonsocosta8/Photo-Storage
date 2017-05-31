@@ -358,19 +358,19 @@ void add_peer(peer_list *list, char * ip, int port){
   // INFORMING OTHER PEERS TO ADD THAT PEER
   char backup_ip[20];
   strcpy(backup_ip, ip);
+  if(!find_peer(list, ip, port)){
+    if(list->total>0){
+      #ifdef DEBUG
+        printf("INFORMING OTHER PEERS THAT %s:%d IS UP\n", ip, port);
+      #endif
 
-  if(list->total>0){
+      inform_add_peers(list, ip, port);
+    }
     #ifdef DEBUG
-      printf("INFORMING OTHER PEERS THAT %s:%d IS UP\n", ip, port);
+      printf("\t\tDEBUG: ADDING TO DATASTRUCT PEER %s:%d\n", ip, port);
     #endif
-
-    inform_add_peers(list, ip, port);
+    add_peer_list(list, backup_ip, port);
   }
-  #ifdef DEBUG
-    printf("\t\tDEBUG: ADDING TO DATASTRUCT PEER %s:%d\n", ip, port);
-  #endif
-  add_peer_list(list, backup_ip, port);
-
 
 }
 
@@ -389,6 +389,8 @@ void * handle_reg(void * arg){
   peer_list *list = arguments->list;
 
 
+  char client[35];
+  sprintf(client, "%s %d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
   // INITIALIZE RESPONSE SOCKET
   int resp_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -413,23 +415,29 @@ void * handle_reg(void * arg){
     exit(-1);
   }
 
+  if(total_peers!=0){
+    for(i=0; i<total_peers; i++){
+      if(strcmp(existing_peers[i], client)!=0){
+        sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
+
+      }else
+        total_peers--;
+      free(existing_peers[i]);
+    }
+    free(existing_peers);
+
+  }
+
   sprintf(resp_numpeers, "OK %d", total_peers);
   nbytes = sendto(resp_fd, resp_numpeers, strlen(resp_numpeers)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
   #ifdef DEBUG
     printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_numpeers);
   #endif
 
-  if(total_peers!=0){
-    for(i=0; i<total_peers; i++){
-      sprintf(resp_buff+strlen(resp_buff), "%s ", existing_peers[i]);
-      free(existing_peers[i]);
-    }
-    free(existing_peers);
-    nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
-    #ifdef DEBUG
-      printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
-    #endif
-  }
+  nbytes = sendto(resp_fd, resp_buff, strlen(resp_buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
+  #ifdef DEBUG
+    printf("\t\tDEBUG: SENT %dB TO CLIENT %s:%d --- %s ---\n", nbytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), resp_buff);
+  #endif
 
 
 

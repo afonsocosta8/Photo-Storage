@@ -102,6 +102,7 @@ int remove_brother(brother_list *list, char *ip, int port);
 
 void free_brother_list(brother_list *list);
 
+int find_peer(peer_list *list, char *ip, int port);
 
 // PHOTO LISTS
 

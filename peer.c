@@ -961,6 +961,20 @@ void * handle_client(void * arg){
       printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
     #endif
 
+    nbytes = recv(client_fd, buff, 200, 0);
+
+    if(nbytes<=0) {
+      printf("BRTOHER DID NOT ANSWER\n");
+      exit(-1);
+    }
+    #ifdef DEBUG
+      printf("\t\tDEBUG: [1] %dB RECV --- %s ---\n", nbytes,  buff);
+    #endif
+    if(strcmp(buff, "OK")!=0) {
+      printf("ERROR ON RECEIVING FROM BROTHER\n");
+      exit(-1);
+    }
+
     unsigned char *buffer;
     size_t filesize;
     char file_name[20];
@@ -1447,6 +1461,18 @@ int main(int argc, char const *argv[]) {
       if(strcmp(resp_code, "OK")!=0) {
         printf("ERROR ON RECEIVING FROM BROTHER\n");
         exit(-1);
+      }
+
+      sprintf(query, "OK");
+
+      nbytes = send(brother_sock, query, strlen(query)+1, 0);
+      #ifdef DEBUG
+        printf("\t\tDEBUG: [1] SENT %dB TO BRTOHER --- %s ---\n", nbytes, query);
+      #endif
+      if(nbytes==-1){
+        #ifdef DEBUG
+          printf("\tDEBUG: MESSAGE NOT SENT\n");
+        #endif
       }
 
       for(i=0; i<num_photos; i++){
