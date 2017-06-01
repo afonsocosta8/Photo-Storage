@@ -274,8 +274,11 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
   photo *aux;
   key_word *aux1;
   int i, j;
+
   for(i=0; i<table->size; i++){
-    if(table->table[i]->list!=NULL)
+    if(table->table[i]->list!=NULL){
+      pthread_mutex_lock(&(table->table[i]->lock));
+
       for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
         if(aux->keywords->list!=NULL)
           for(j=1, aux1 = aux->keywords->list; aux1 != NULL; aux1=aux1->next, j++){
@@ -287,6 +290,9 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
             }
           }
       }
+
+      pthread_mutex_unlock(&(table->table[i]->lock));
+    }
   }
   #ifdef DEBUG
     print_keyword_list(ids_list);
@@ -1003,7 +1009,8 @@ void * handle_client(void * arg){
     FILE *img;
 
     for(i=0; i<table->size; i++){
-      if(table->table[i]->list!=NULL)
+      if(table->table[i]->list!=NULL){
+        pthread_mutex_lock(&(table->table[i]->lock));
         for(aux = table->table[i]->list; aux != NULL; aux=aux->next){
           sprintf(file_name, "%u", aux->id);
           img = fopen(file_name, "rb");
@@ -1058,6 +1065,8 @@ void * handle_client(void * arg){
           free(buffer);
           fclose(img);
         }
+        pthread_mutex_unlock(&(table->table[i]->lock));
+      }
     }
 
 
