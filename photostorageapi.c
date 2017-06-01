@@ -215,7 +215,7 @@ uint32_t gallery_add_photo(int peer_socket, char *file_name){
    /* walk through other tokens */
    while( token != NULL )
    {
-      printf( " %s\n", token );
+      //printf( " %s\n", token );
       previous = token;
       token = strtok(NULL, "/");
    }
@@ -773,6 +773,8 @@ int gallery_get_photo(int peer_socket, uint32_t id_photo, char *file_name){
       rcv_size=act_rcv_size+rcv_size;
       fwrite(buffer,1,act_rcv_size,img);
     }
+    sprintf(buff, "OK");
+    nbytes = send(peer_socket, buff, strlen(buff)+1, 0);
     close(peer_socket);
     fclose(img);
     return 1;

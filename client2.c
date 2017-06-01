@@ -111,7 +111,7 @@ int main(int argc, char const *argv[]) {
         }else{
           printf("\ninvalid arguments or network problem\n\n");
         }
-	close(psock);
+	      close(psock);
       }else if(psock==0){
         printf("\nNo peer is available\n\n");
       }else{

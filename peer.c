@@ -17,6 +17,9 @@
 
 #define CHUNK_SIZE 512
 
+photo_hash_table * photos_global;
+brother_list * brothers_global;
+
 typedef struct _args_regpeer{
 
   int mp;
@@ -44,9 +47,9 @@ uint32_t get_photoid(char * host){
 
   int sock_fd;
   int nbytes;
-
-  printf("CONTACTING GATEWAY TO GET A NEW PHOTO ID\n");
-
+  #ifdef DEBUG
+    printf("CONTACTING GATEWAY TO GET A NEW PHOTO ID\n");
+  #endif
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock_fd == -1){
     perror("ERROR CREATING SOCKET\n");
@@ -170,10 +173,10 @@ uint32_t add_image(int client_fd, char *photo_name, unsigned long filesize, char
 uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table){
 
   int ret;
-  printf("id=%d\n", photo_id);
   char todelete[20];
-  print_photo_hash(table);
-
+  #ifdef DEBUG
+    print_photo_hash(table);
+  #endif
   sprintf(todelete, "%u", photo_id);
   ret = remove(todelete);
 
@@ -190,9 +193,9 @@ uint32_t delete_image(int client_fd, uint32_t photo_id, photo_hash_table *table)
   }
 
 
-
-  print_photo_hash(table);
-
+  #ifdef DEBUG
+    print_photo_hash(table);
+  #endif
 }
 
 int get_photo(int client_fd, uint32_t photo_id, photo_hash_table *table){
@@ -285,7 +288,9 @@ int search_ids(int client_fd, char *keyword, keyword_list *ids_list, photo_hash_
           }
       }
   }
-  print_keyword_list(ids_list);
+  #ifdef DEBUG
+    print_keyword_list(ids_list);
+  #endif
   return num_ids;
 }
 
@@ -484,13 +489,14 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
       #endif
 
+      printf("Photo added successfully. Photo ID is %d\n\n", photo_id);
+
 
 
     }else{
       #ifdef DEBUG
         printf("\t\tERROR. COULDN'T STORE PHOTO\n");
       #endif
-      printf("ERROR. COULDN'T STORE PHOTO\n");
       sprintf(buff, "ERROR");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
       close(client_fd);
@@ -633,6 +639,7 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: KEYWORD SUCCESSFULLY ADDED\n");
         print_photo_hash(table);
       #endif
+      printf("Keyword added\n\n");
 
 
 
@@ -699,6 +706,11 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buffer);
       #endif
 
+      if (num_ids==0) {
+        printf("No photo matches \"%s\" keyword\n", keyword);
+      }else{
+        printf("\nFound photos with %s for \"%s\" keyword", buffer, keyword);
+      }
 
     }
 
@@ -811,6 +823,8 @@ void * handle_client(void * arg){
       #ifdef DEBUG
         printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
       #endif
+
+      printf("Photo with id %d deleted\n", photo_id);
     }
 
   }else if(strstr(client_query, "GETNAME") != NULL) {
@@ -829,6 +843,7 @@ void * handle_client(void * arg){
       #ifdef DEBUG
         printf("\t\tDEBUG: FOUND PHOTO - %s\n", name);
       #endif
+      printf("Sent name %s of photo with id %d\n\n", name, photo_id);
     }else{
       sprintf(buff, "ERROR");
       #ifdef DEBUG
@@ -851,7 +866,11 @@ void * handle_client(void * arg){
     if(res!=1){
       sprintf(buff, "ERROR");
       nbytes = send(client_fd, buff, strlen(buff)+1, 0);
-      printf("replying %d bytes\n", nbytes);
+    }else{
+
+      nbytes = recv(client_fd, buff, 20, 0);
+      if(strcmp(buff, "OK")==0)
+        printf("Photo sent\n\n");
     }
   }else if(strstr(client_query, "RPLDLT") != NULL) {
 
@@ -1001,9 +1020,7 @@ void * handle_client(void * arg){
             exit(-1);
           }
           fread(buffer, sizeof(char), filesize, img);
-          printf("olaaaa\n");
           sprintf(buff, "PHOTO %zu %u %s %d", filesize, aux->id, aux->name, aux->keywords->total);
-          printf("adeeueeuuss\n");
           nbytes = send(client_fd, buff, strlen(buff)+1, 0);
           #ifdef DEBUG
             printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buff);
@@ -1054,6 +1071,21 @@ void * handle_client(void * arg){
   }
 
   close(client_fd);
+  return NULL;
+}
+
+void * handle_inputs(void * arg){
+  char query[20];
+  while(1){
+    fscanf(stdin, "%s", query);
+    if(strcmp(query,"photos")==0){
+      print_photo_hash(photos_global);
+    }else if(strcmp(query, "peers")==0){
+      print_brother_list(brothers_global);
+    }else{
+
+    }
+  }
   return NULL;
 }
 
@@ -1168,7 +1200,9 @@ void * handle_alive(void * arg){
     printf("ERROR ON RECEIVING FROM GATEWAY\n");
     exit(-1);
   }else{
-    printf("THERE ARE %d ACTIVE PEERS\n", num_peers);
+    #ifdef DEBUG
+      printf("THERE ARE %d ACTIVE PEERS\n", num_peers);
+    #endif
     if(num_peers!=0){
       char * active_peers = (char*)malloc((sizeof(char)*22*num_peers)+1);
       if(active_peers == NULL){
@@ -1222,7 +1256,9 @@ void * handle_alive(void * arg){
 
 
     if(strcmp(buff, "UALIVE?")==0) {
-      printf("RECEIVED UALIVE FROM GW. ANSWERING...\n");
+      #ifdef DEBUG
+        printf("RECEIVED UALIVE FROM GW. ANSWERING...\n");
+      #endif
       sprintf(buff, "OK");
       nbytes = sendto(sock_fd, buff, strlen(buff)+1, 0, (const struct sockaddr *) &client_addr, sizeof(client_addr));
       #ifdef DEBUG
@@ -1281,8 +1317,8 @@ int main(int argc, char const *argv[]) {
   int get_peer_fd;
   int nbytes;
 
-  photo_hash_table * photos =  create_hash_table(769);
-  brother_list * brothers = init_brother_list();
+  photos_global =  create_hash_table(769);
+  brothers_global = init_brother_list();
 
 
   // DECODING INPUT ARGUMENTS
@@ -1323,9 +1359,9 @@ int main(int argc, char const *argv[]) {
 
   // FIRST PEER TASK IS TO RETRIEVE ANOTHER PEER IP ADDRESS TO DOWNLOAD ALL THE DATA
   // PREPARING MESSAGE
-
-  printf("CONTACTING GATEWAY TO GET A PEER IP ADDRESS\n");
-
+  #ifdef DEBUG
+    printf("CONTACTING GATEWAY TO GET A PEER IP ADDRESS\n");
+  #endif
   get_peer_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if(get_peer_fd == -1){
     perror("ERROR CREATING SOCKET\n");
@@ -1381,6 +1417,12 @@ int main(int argc, char const *argv[]) {
 
 
   // IN CASE THERE ARE ALREADY PEERS, I NEED TO TRANSFER FILES FROM THE OTHER PEER FRIST
+
+  if(pthread_create(&thr_id, NULL, handle_inputs, NULL)!=0){
+    printf("ERROR CREATING THREAD FOR CLIENT\n");
+    exit(-1);
+  }
+
   if(strcmp(get_peer_resp, "ERROR NO PEERS")!=0){
     char ipport[30];
     char code[5];
@@ -1399,6 +1441,7 @@ int main(int argc, char const *argv[]) {
     char * key;
 
 
+
     sscanf(get_peer_resp, "%s %s", code, ipport);
     if(strcmp(code, "OK")==0){
 
@@ -1408,8 +1451,9 @@ int main(int argc, char const *argv[]) {
 
       brother_ip = strtok(ipport,":");
       brother_port = atoi(strtok(NULL,":"));
-
-      printf("RETRIEVING FILES FROM BROTHER %s:%d\n", brother_ip, brother_port);
+      #ifdef DEBUG
+        printf("RETRIEVING FILES FROM BROTHER %s:%d\n", brother_ip, brother_port);
+      #endif
 
       #ifdef DEBUG
         printf("\tDEBUG: CONNECTING TO BROTHER\n");
@@ -1501,11 +1545,11 @@ int main(int argc, char const *argv[]) {
           printf("\t\tDEBUG: DECODED: FILESIZE=%zu | ID=%d | NAME=%s | NUMKEYS=%d\n", file_size, id, name, num_keys);
         #endif
 
-        add_photo_hash_table(photos, name, id);
+        add_photo_hash_table(photos_global, name, id);
 
         #ifdef DEBUG
           printf("\t\tDEBUG: ## ADDED A PHOTO TO PHOTO LIST\n");
-          print_photo_hash(photos);
+          print_photo_hash(photos_global);
         #endif
 
 
@@ -1543,10 +1587,10 @@ int main(int argc, char const *argv[]) {
           strtok(keys, " ");
           key = strtok(NULL, " ");
           while(key != NULL){
-            add_keyword_photo_hash(photos, id, key);
+            add_keyword_photo_hash(photos_global, id, key);
             #ifdef DEBUG
               printf("\t\tDEBUG: ADDED A KEY %s TO PHOTO LIST\n", key);
-              print_photo_hash(photos);
+              print_photo_hash(photos_global);
             #endif
             key = strtok(NULL, " ");
           }
@@ -1614,7 +1658,7 @@ int main(int argc, char const *argv[]) {
   }
   arguments->mp = mp;
   arguments->p = p;
-  arguments->list = brothers;
+  arguments->list = brothers_global;
   strcpy(arguments->h, host);
   if(pthread_create(&thr_id, NULL, handle_alive, arguments)!=0){
     printf("ERROR CREATING THREAD FOR CLIENT\n");
@@ -1671,7 +1715,9 @@ int main(int argc, char const *argv[]) {
 
 
   // READY TO ACCEPT CLIENTS
-  printf("READY TO ACCEPT CLIENT CONNECTIONS\n");
+  #ifdef DEBUG
+    printf("READY TO ACCEPT CLIENT CONNECTIONS\n");
+  #endif
   args_client *arguments1;
   while(1){
 
@@ -1681,15 +1727,17 @@ int main(int argc, char const *argv[]) {
       printf("COULD NOT ALLOCATE MEMORY\n");
       exit(-1);
     }
-    arguments1->table = photos;
+    arguments1->table = photos_global;
     arguments1->host = host;
-    arguments1->brothers = brothers;
+    arguments1->brothers = brothers_global;
 
     #ifdef DEBUG
       printf("\tDEBUG: WAITING FOR CLIENTS...\n");
     #endif
     client_fd= accept(sock_fd, (struct sockaddr *) & client_addr, &size_addr);
-    printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    #ifdef DEBUG
+      printf("ACCEPTED ONE CONNECTION FROM %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    #endif
 
     arguments1->client_fd = client_fd;
 
@@ -1731,8 +1779,8 @@ int main(int argc, char const *argv[]) {
     */
   }
 
-  free_brother_list(brothers);
-  free_hash_table(photos);
+  free_brother_list(brothers_global);
+  free_hash_table(photos_global);
   close(sock_fd);
   exit(0);
 }
