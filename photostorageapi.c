@@ -443,7 +443,7 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
 
   //DECODING PEER RESPONSE
-  if(strcmp(buff, "ERROR")==0){
+  if(strcmp(buff, "OK 0")==0){
 
     #ifdef DEBUG
       printf("\tDEBUG: PHOTO NOT FOUND\n");
@@ -462,7 +462,7 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
   *id_photo = (uint32_t*)malloc(sizeof(uint32_t)*num_photo_ids);
   if(id_photo == NULL){
     printf("COULD NOT ALLOCATE MEMORY\n");
-    exit(-1);
+    return -1;
   }
   if(strcmp(answer, "OK")==0){
 
