@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
   int psock;
   int i;
   if(argc!=5) { /* Number of arguments inserted is not correct */
-      printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");
+      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port>\n");
       exit(4);
   }else{ /*Reading each one of the arguments */
       for(i=1; i<argc; i=i+2) {
@@ -34,7 +34,7 @@ int main(int argc, char const *argv[]) {
                       break;
 
               default:
-                      printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");
+                      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port>\n");
                       exit(-1);
                       break;
               }

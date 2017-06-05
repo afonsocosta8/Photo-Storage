@@ -443,7 +443,7 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
 
 
   //DECODING PEER RESPONSE
-  if(strcmp(buff, "OK 0")==0){
+  if(strcmp(buff, "NO PHOTOS")==0){
 
     #ifdef DEBUG
       printf("\tDEBUG: PHOTO NOT FOUND\n");
@@ -469,6 +469,9 @@ int gallery_search_photo(int peer_socket, char * keyword, uint32_t ** id_photo){
     #ifdef DEBUG
       printf("\tDEBUG: ALL OK. DECONDING PHOTO_IDs NOW\n");
     #endif
+
+    sprintf(buff, "OK");
+    nbytes = send(peer_socket, buff, strlen(buff)+1, 0);
 
     nbytes = recv(peer_socket, buff, sizeof(buff), 0);
     if(nbytes <= 0){

@@ -698,6 +698,8 @@ void * handle_client(void * arg){
         printf("\t\tDEBUG: SENT %dB TO CLIENT --- %s ---\n", nbytes, buffer);
       #endif
 
+      nbytes = recv(client_fd, buff, sizeof(buff), 0);
+
       sprintf(buffer, "IDS ");
       if(ids_list->list!=NULL){
         for(aux=ids_list->list; aux!=NULL; aux=aux->next){
@@ -1332,7 +1334,7 @@ int main(int argc, char const *argv[]) {
 
   // DECODING INPUT ARGUMENTS
   if(argc!=7){
-      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port> <peer port>\n");
+      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port> -m <peer port>\n");
       exit(4);
   }else{ /*Reading each one of the arguments */
       for(i=1; i<argc; i=i+2) {
@@ -1351,7 +1353,7 @@ int main(int argc, char const *argv[]) {
                       break;
 
               default:
-                      printf("Something went wrong...\nUsage: schat -n <name>.<survame> -i <ip> -p <scport> -s <snpip> -q <snpport>\n");
+                      printf("Something went wrong...\nUsage: peer -h <gateway ip> -p <gateway port> -m <peer port>\n");
                       exit(-1);
                       break;
               }
